@@ -443,7 +443,7 @@ const CustomerPortal = () => {
                 value={custName}
                 onChange={(e) => setCustName(e.target.value)}
                 className="w-full bg-obsidian-800 border border-slate-700/50 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-neoncyan text-sm"
-                placeholder="John Doe"
+                placeholder="Enter your name"
               />
             </div>
             <div>
