@@ -53,6 +53,69 @@ const seedDatabase = async () => {
       console.log('Seeded default dynamic pricing configuration');
     }
 
+    // 4. Seed Categories and Products
+    const Category = require('../models/Category');
+    const Product = require('../models/Product');
+
+    let fastFoodCat = await Category.findOne({ name: 'Burgers & Sides' });
+    if (!fastFoodCat) {
+      fastFoodCat = await Category.create({
+        name: 'Burgers & Sides',
+        description: 'Delicious burgers, loaded fries, and starters'
+      });
+      console.log('Seeded Category: Burgers & Sides');
+    }
+
+    let beveragesCat = await Category.findOne({ name: 'Beverages' });
+    if (!beveragesCat) {
+      beveragesCat = await Category.create({
+        name: 'Beverages',
+        description: 'Chilled mocktails, sodas, and shakes'
+      });
+      console.log('Seeded Category: Beverages');
+    }
+
+    const defaultItems = [
+      {
+        name: 'Classic Cheeseburger',
+        category: fastFoodCat._id,
+        description: 'Juicy flame-grilled beef patty, melted cheddar cheese, lettuce, tomato, and house burger sauce.',
+        basePrice: 199.00,
+        currentPrice: 199.00,
+        minPrice: 159.00,
+        maxPrice: 399.00,
+        stock: 50
+      },
+      {
+        name: 'Loaded Cheese Fries',
+        category: fastFoodCat._id,
+        description: 'Crispy golden French fries topped with hot melted cheese sauce, jalapeños, and green onions.',
+        basePrice: 149.00,
+        currentPrice: 149.00,
+        minPrice: 119.00,
+        maxPrice: 299.00,
+        stock: 40
+      },
+      {
+        name: 'Mint Mojito',
+        category: beveragesCat._id,
+        description: 'Refreshing blend of fresh mint leaves, lime juice, white sugar, soda, and crushed ice.',
+        basePrice: 119.00,
+        currentPrice: 119.00,
+        minPrice: 89.00,
+        maxPrice: 249.00,
+        stock: 100
+      }
+    ];
+
+    for (const item of defaultItems) {
+      const exists = await Product.findOne({ name: item.name });
+      if (!exists) {
+        await Product.create(item);
+        console.log(`Seeded Product: ${item.name}`);
+      }
+    }
+
   } catch (error) {
     console.error('Error seeding database:', error.message);
   }
