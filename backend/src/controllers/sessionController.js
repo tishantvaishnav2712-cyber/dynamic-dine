@@ -161,6 +161,10 @@ const requestBill = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Invalid session token' });
     }
 
+    // Set billing request state in database
+    session.billRequested = true;
+    await session.save();
+
     // Broadcast notification to waiters and admin
     if (req.io) {
       req.io.emit('bill_requested', {

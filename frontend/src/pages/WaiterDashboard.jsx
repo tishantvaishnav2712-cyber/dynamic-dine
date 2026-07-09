@@ -35,6 +35,22 @@ const WaiterDashboard = () => {
       triggerCallAlert();
     });
 
+    // Real-time bill requested alerts
+    socket.on('bill_requested', ({ tableNumber, sessionId }) => {
+      setCalls((prev) => [
+        { message: `Requested Bill Settlement`, tableNumber, timestamp: new Date() },
+        ...prev,
+      ]);
+      triggerCallAlert();
+      fetchTables();
+      setSelectedSession((prev) => {
+        if (prev && prev._id === sessionId) {
+          return { ...prev, billRequested: true };
+        }
+        return prev;
+      });
+    });
+
     // Food ready alert
     socket.on('notification', ({ type, message }) => {
       if (type === 'order_ready') {
@@ -54,6 +70,7 @@ const WaiterDashboard = () => {
     return () => {
       socket.off('table_status_updated');
       socket.off('waiter_called');
+      socket.off('bill_requested');
       socket.off('notification');
       socket.off('payment_completed');
     };
@@ -393,11 +410,26 @@ const WaiterDashboard = () => {
                         <span className="font-bold text-white text-sm">₹{selectedSession.runningTotal.toFixed(2)}</span>
                       </div>
 
+                      {selectedSession.billRequested ? (
+                        <div className="bg-neoncyan/10 border border-neoncyan/30 text-neoncyan p-2.5 rounded-xl text-xs text-center font-black animate-pulse uppercase tracking-wider">
+                          🛎️ Guest Requested Bill Settlement
+                        </div>
+                      ) : (
+                        <div className="bg-obsidian-800/50 border border-slate-700/50 text-slate-500 p-2.5 rounded-xl text-xs text-center font-bold">
+                          ⏳ Awaiting Customer Bill Request
+                        </div>
+                      )}
+
                       <button
                         type="submit"
-                        className="w-full bg-neoncyan text-obsidian-900 font-bold py-3 rounded-xl hover:bg-neoncyan/95 transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 flex items-center justify-center gap-1"
+                        disabled={!selectedSession.billRequested}
+                        className={`w-full font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1 ${
+                          selectedSession.billRequested
+                            ? 'bg-neoncyan text-obsidian-900 hover:bg-neoncyan/95 cursor-pointer shadow-lg shadow-neoncyan/15'
+                            : 'bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed'
+                        }`}
                       >
-                        Settle & Check Out
+                        {selectedSession.billRequested ? 'Settle & Check Out' : 'Checkout Disabled'}
                       </button>
                     </form>
                   </div>

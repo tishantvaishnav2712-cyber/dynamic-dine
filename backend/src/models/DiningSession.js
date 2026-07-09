@@ -47,6 +47,10 @@ const DiningSessionSchema = new mongoose.Schema({
     enum: ['pending', 'paid'],
     default: 'pending',
   },
+  billRequested: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });
