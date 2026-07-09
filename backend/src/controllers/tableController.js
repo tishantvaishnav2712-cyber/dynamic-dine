@@ -87,9 +87,9 @@ const generateTableQRCode = async (req, res, next) => {
     table.qrCodeData = tableSecretKey;
     await table.save();
 
-    // Construct the QR Code target client URL automatically using local IP address
-    const localIp = getLocalIpAddress();
-    const qrUrl = `http://${localIp}:5173/table/${tableNumber}?key=${tableSecretKey}`;
+    // Construct the QR Code target client URL automatically using frontend domain or local IP address
+    const baseFrontendUrl = process.env.FRONTEND_URL || `http://${getLocalIpAddress()}:5173`;
+    const qrUrl = `${baseFrontendUrl}/table/${tableNumber}?key=${tableSecretKey}`;
 
     // Generate base64 QR Image Data URI
     const qrImageBase64 = await QRCode.toDataURL(qrUrl, {
