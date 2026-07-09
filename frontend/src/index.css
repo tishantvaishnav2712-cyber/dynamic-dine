@@ -81,3 +81,27 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   @apply bg-obsidian-800;
 }
+
+/* Premium Hover Transitions & Scale utilities */
+.hover-grow {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.hover-grow:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 10px 25px -5px rgba(0, 229, 255, 0.15), 0 8px 10px -6px rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.35) !important;
+}
+
+/* Waiter/Admin table selection scaling */
+.table-card-btn {
+  transition: all 0.2s ease-in-out;
+}
+.table-card-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
+}
+.table-card-btn:active {
+  transform: scale(0.95);
+}
+

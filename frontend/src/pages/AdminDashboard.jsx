@@ -789,7 +789,7 @@ const AdminDashboard = () => {
             {Array.from({ length: 10 }, (_, i) => i + 1).map((tNum) => (
               <div
                 key={tNum}
-                className="border border-slate-200 dark:border-slate-800 p-4 rounded-xl text-center bg-obsidian-800/10 flex flex-col justify-between h-36"
+                className="border border-slate-200 dark:border-slate-800 p-4 rounded-xl text-center bg-obsidian-800/10 flex flex-col justify-between h-36 hover-grow cursor-pointer"
               >
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Table {tNum}</div>
                 <div className="flex justify-center my-2 text-neoncyan">

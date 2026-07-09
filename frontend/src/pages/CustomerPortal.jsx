@@ -605,7 +605,7 @@ const CustomerPortal = () => {
                   return (
                     <div
                       key={product._id}
-                      className={`bg-obsidian-800/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between shadow-md transition-all ${flashClass}`}
+                      className={`bg-obsidian-800/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between shadow-md transition-all hover-grow cursor-pointer ${flashClass}`}
                     >
                       <div className="flex items-center flex-1 pr-3 overflow-hidden">
                         {product.image && (
