@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300 font-sans antialiased m-0 p-0 min-h-screen;
+  }
+  body.dark {
+    @apply bg-obsidian-900 text-slate-100;
+  }
+}
+
+/* Glassmorphism card utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-panel {
+  background: rgba(18, 24, 36, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Ticker neon animation */
+@keyframes neon-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 229, 255, 0.2), 0 0 10px rgba(0, 229, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), 0 0 20px rgba(0, 229, 255, 0.2);
+  }
+}
+
+.glow-cyan {
+  animation: neon-glow 2s infinite ease-in-out;
+}
+
+/* Price blink animations */
+@keyframes blink-green {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(0, 230, 118, 0.25); }
+}
+
+@keyframes blink-red {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(255, 56, 56, 0.25); }
+}
+
+.price-up {
+  animation: blink-green 1.2s ease-in-out;
+  border-color: #00E676 !important;
+}
+
+.price-down {
+  animation: blink-red 1.2s ease-in-out;
+  border-color: #FF3838 !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-obsidian-700 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-obsidian-800;
+}
