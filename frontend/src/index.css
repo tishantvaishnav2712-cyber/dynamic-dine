@@ -82,26 +82,66 @@
   @apply bg-obsidian-800;
 }
 
-/* Premium Hover Transitions & Scale utilities */
-.hover-grow {
+/* ==========================================
+   GLOBAL INTERACTIVE HOVER EFFECTS (SITE-WIDE)
+   ========================================== */
+
+/* 1. Global Button Interactions */
+button, 
+.btn-action, 
+a.btn {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:hover:not(:disabled), 
+.btn-action:hover, 
+a.btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.25);
+  filter: brightness(1.05);
+}
+button:active:not(:disabled) {
+  transform: translateY(0) scale(0.95) !important;
+}
+
+/* 2. Global Form Input Focus Glows */
+input, 
+select, 
+textarea {
+  transition: all 0.25s ease-in-out;
+}
+input:focus, 
+select:focus, 
+textarea:focus {
+  border-color: rgba(0, 229, 255, 0.6) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+  outline: none;
+}
+
+/* 3. Global Card & Panel Hover Growth */
+.glass-panel, 
+.hover-grow,
+.bg-obsidian-800\/80,
+.bg-obsidian-800\/20 {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-
-.hover-grow:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 10px 25px -5px rgba(0, 229, 255, 0.15), 0 8px 10px -6px rgba(0, 229, 255, 0.1);
-  border-color: rgba(0, 229, 255, 0.35) !important;
+.glass-panel:hover, 
+.hover-grow:hover,
+.bg-obsidian-800\/80:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 12px 30px rgba(0, 229, 255, 0.12), 0 4px 12px rgba(0, 229, 255, 0.08);
+  border-color: rgba(0, 229, 255, 0.3) !important;
 }
 
-/* Waiter/Admin table selection scaling */
+/* 4. Table selection card scaling (Waiter & Admin layouts) */
 .table-card-btn {
   transition: all 0.2s ease-in-out;
 }
 .table-card-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.2);
 }
 .table-card-btn:active {
   transform: scale(0.95);
 }
+
 
