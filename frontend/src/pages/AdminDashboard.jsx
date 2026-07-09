@@ -793,7 +793,10 @@ const AdminDashboard = () => {
               >
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Table {tNum}</div>
                 <div className="flex justify-center my-2 text-neoncyan">
-                  <QrCode className="w-10 h-10 animate-pulse" />
+                  <QrCode 
+                    className="w-10 h-10 animate-pulse" 
+                    style={{ animationDelay: `${(tNum - 1) * 0.2}s` }}
+                  />
                 </div>
                 <button
                   onClick={() => generateQRCodeCard(tNum)}
