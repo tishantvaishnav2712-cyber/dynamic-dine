@@ -57,6 +57,11 @@ const seedDatabase = async () => {
     const Category = require('../models/Category');
     const Product = require('../models/Product');
 
+    // Wipe all existing categories and products to start completely fresh
+    await Category.deleteMany({});
+    await Product.deleteMany({});
+    console.log('Cleared all existing Categories and Products from database.');
+
     const seedCategory = async (name, description) => {
       let cat = await Category.findOne({ name });
       if (!cat) {
