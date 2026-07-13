@@ -57,27 +57,6 @@ const seedDatabase = async () => {
     const Category = require('../models/Category');
     const Product = require('../models/Product');
 
-    // Wipe all existing categories and products to start completely fresh
-    await Category.deleteMany({});
-    await Product.deleteMany({});
-    console.log('Cleared all existing Categories and Products from database.');
-
-    // Seed only the Beverages category and Mint Mojito product to resolve active checkout references
-    const beveragesCat = await seedCategory('Beverages', 'Refreshing mojitos, sodas, and mocktails');
-    
-    await Product.create({
-      name: 'Mint Mojito',
-      category: beveragesCat._id,
-      description: 'Refreshing blend of fresh mint leaves, lime juice, white sugar, soda, and crushed ice.',
-      basePrice: 119.00,
-      currentPrice: 119.00,
-      minPrice: 89.00,
-      maxPrice: 249.00,
-      stock: 100
-    });
-    console.log('Seeded Mint Mojito to restore active session references.');
-    return; // Exit early so no other items are seeded
-
     const seedCategory = async (name, description) => {
       let cat = await Category.findOne({ name });
       if (!cat) {
@@ -86,6 +65,31 @@ const seedDatabase = async () => {
       }
       return cat;
     };
+
+    // Wipe all existing categories and products to start completely fresh
+    await Category.deleteMany({});
+    await Product.deleteMany({});
+    console.log('Cleared all existing Categories and Products from database.');
+
+    // Seed only the Beverages category and Mint Mojito product to resolve active checkout references
+    const beveragesCat = await seedCategory('Beverages', 'Refreshing mojitos, sodas, and mocktails');
+    
+    // Check if Mint Mojito already exists, otherwise create it
+    let mintMojito = await Product.findOne({ name: 'Mint Mojito' });
+    if (!mintMojito) {
+      mintMojito = await Product.create({
+        name: 'Mint Mojito',
+        category: beveragesCat._id,
+        description: 'Refreshing blend of fresh mint leaves, lime juice, white sugar, soda, and crushed ice.',
+        basePrice: 119.00,
+        currentPrice: 119.00,
+        minPrice: 89.00,
+        maxPrice: 249.00,
+        stock: 100
+      });
+      console.log('Seeded Mint Mojito to restore active session references.');
+    }
+    return; // Exit early so no other items are seeded
 
     const mexicanCat = await seedCategory('Mexican Bar', 'Mexican snacks, tacos, enchiladas, and rice dishes');
     const rostiCat = await seedCategory('Rosti Bar', 'Traditional Swiss potato rosti dishes');

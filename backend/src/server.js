@@ -28,29 +28,43 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary lookup: Find original Mint Mojito ID on startup
+// Temporary lookup: Link active orders to the new Mint Mojito product ID
 const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
+    const productsCollection = db.collection('products');
     const ordersCollection = db.collection('orders');
-    const orders = await ordersCollection.find({}).toArray();
-    const productRefs = {};
+    
+    const newMojito = await productsCollection.findOne({ name: 'Mint Mojito' });
+    if (!newMojito) {
+      console.log('Mint Mojito product not found to link references.');
+      return;
+    }
+    
+    const orders = await ordersCollection.find({ overallStatus: { $ne: 'completed' } }).toArray();
     for (const order of orders) {
-      if (order.items) {
-        for (const item of order.items) {
-          if (item.product) {
-            productRefs[item.name] = item.product.toString();
-          }
+      let updated = false;
+      const updatedItems = order.items.map(item => {
+        if (item.name.toLowerCase().includes('mojito')) {
+          updated = true;
+          return { ...item, product: newMojito._id };
         }
+        return item;
+      });
+      if (updated) {
+        await ordersCollection.updateOne(
+          { _id: order._id },
+          { $set: { items: updatedItems } }
+        );
+        console.log(`Updated order ${order._id} items with the new Mint Mojito ID.`);
       }
     }
-    console.log('--- ALL HISTORICAL PRODUCT REF IDS:', JSON.stringify(productRefs, null, 2));
   } catch (err) {
-    console.error('Failed to run lookup:', err);
+    console.error('Failed to link product references:', err);
   }
-}, 5000);
+}, 8000);
 
 const app = express();
 const server = http.createServer(app);
