@@ -28,20 +28,25 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary cleanup: Find original Mint Mojito ID on startup
+// Temporary lookup: Find original Mint Mojito ID on startup
 const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
     const ordersCollection = db.collection('orders');
-    const order = await ordersCollection.findOne({ "items.name": { $regex: /mojito/i } });
-    if (order) {
-      const item = order.items.find(i => i.name.toLowerCase().includes('mojito'));
-      console.log('--- OLD PRODUCT ID IS:', item.product.toString());
-    } else {
-      console.log('--- No historical orders found containing Mojito items.');
+    const orders = await ordersCollection.find({}).toArray();
+    const productRefs = {};
+    for (const order of orders) {
+      if (order.items) {
+        for (const item of order.items) {
+          if (item.product) {
+            productRefs[item.name] = item.product.toString();
+          }
+        }
+      }
     }
+    console.log('--- ALL HISTORICAL PRODUCT REF IDS:', JSON.stringify(productRefs, null, 2));
   } catch (err) {
     console.error('Failed to run lookup:', err);
   }
