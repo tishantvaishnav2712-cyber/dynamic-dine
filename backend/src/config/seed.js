@@ -347,17 +347,47 @@ const seedDatabase = async () => {
       { name: 'Cheese Garlic Bread - 8 pcs', category: globalStartersCat._id, description: 'Garlic bread slices loaded with melted mozzarella cheese.', basePrice: 299.00 }
     ];
 
+    const categoryImages = {
+      [mexicanCat._id.toString()]: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
+      [rostiCat._id.toString()]: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&q=80',
+      [chineseCat._id.toString()]: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80',
+      [bakedCat._id.toString()]: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
+      [startersCat._id.toString()]: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=400&q=80',
+      [risottoCat._id.toString()]: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&q=80',
+      [italianCat._id.toString()]: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=80',
+      [continentalCat._id.toString()]: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&q=80',
+      [pizzaCat._id.toString()]: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80',
+      [loafCat._id.toString()]: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80',
+      [gardenCat._id.toString()]: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80',
+      [paneerCat._id.toString()]: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&q=80',
+      [vegCat._id.toString()]: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&q=80',
+      [kajuCat._id.toString()]: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&q=80',
+      [dalCat._id.toString()]: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=80',
+      [riceCat._id.toString()]: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=80',
+      [breadsCat._id.toString()]: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&q=80',
+      [shakesCat._id.toString()]: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=400&q=80',
+      [beveragesCat._id.toString()]: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400&q=80',
+      [soupCat._id.toString()]: 'https://images.unsplash.com/photo-1547592165-e1d17fed6005?w=400&q=80',
+      [globalStartersCat._id.toString()]: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
+      [dessertsCat._id.toString()]: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&q=80'
+    };
+
     for (const item of defaultItems) {
-      const exists = await Product.findOne({ name: item.name });
-      if (!exists) {
-        await Product.create({
+      const imgUrl = categoryImages[item.category.toString()] || '';
+      let prod = await Product.findOne({ name: item.name });
+      if (!prod) {
+        prod = await Product.create({
           ...item,
+          image: imgUrl,
           currentPrice: item.basePrice,
           minPrice: item.minPrice || item.basePrice * 0.8,
           maxPrice: item.maxPrice || item.basePrice * 2.5,
           stock: 100 // Default starter stock
         });
         console.log(`Seeded Product: ${item.name}`);
+      } else {
+        prod.image = imgUrl;
+        await prod.save();
       }
     }
 
