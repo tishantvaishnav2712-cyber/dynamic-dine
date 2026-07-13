@@ -61,7 +61,22 @@ const seedDatabase = async () => {
     await Category.deleteMany({});
     await Product.deleteMany({});
     console.log('Cleared all existing Categories and Products from database.');
-    return; // Exit here to leave the menu completely empty
+
+    // Seed only the Beverages category and Mint Mojito product to resolve active checkout references
+    const beveragesCat = await seedCategory('Beverages', 'Refreshing mojitos, sodas, and mocktails');
+    
+    await Product.create({
+      name: 'Mint Mojito',
+      category: beveragesCat._id,
+      description: 'Refreshing blend of fresh mint leaves, lime juice, white sugar, soda, and crushed ice.',
+      basePrice: 119.00,
+      currentPrice: 119.00,
+      minPrice: 89.00,
+      maxPrice: 249.00,
+      stock: 100
+    });
+    console.log('Seeded Mint Mojito to restore active session references.');
+    return; // Exit early so no other items are seeded
 
     const seedCategory = async (name, description) => {
       let cat = await Category.findOne({ name });
