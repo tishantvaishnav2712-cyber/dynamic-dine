@@ -28,35 +28,35 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary cleanup: Clear Table 7 active Mojito orders and set status to cleaning
+// Temporary cleanup: Reset Table 7 and clear its sessions
 const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
-    const ordersCollection = db.collection('orders');
     const tablesCollection = db.collection('tables');
+    const sessionsCollection = db.collection('diningsessions');
+    const ordersCollection = db.collection('orders');
     
-    // 1. Wipe active orders
-    const orders = await ordersCollection.find({ tableNumber: 7, overallStatus: { $ne: 'completed' } }).toArray();
-    for (const order of orders) {
-      const filteredItems = order.items.filter(item => !item.name.toLowerCase().includes('mojito'));
-      const newStatus = filteredItems.length === 0 ? 'cancelled' : order.overallStatus;
-      await ordersCollection.updateOne(
-        { _id: order._id },
-        { $set: { items: filteredItems, overallStatus: newStatus } }
-      );
-    }
+    // 1. Delete all active sessions and orders linked to Table 7
+    await sessionsCollection.deleteMany({ tableNumber: 7 });
+    await ordersCollection.deleteMany({ tableNumber: 7 });
     
-    // 2. Set Table 7 to cleaning and disconnect active session
-    await tablesCollection.updateOne(
-      { tableNumber: 7 },
-      { $set: { status: 'cleaning', currentSessionId: null } }
-    );
+    // 2. Delete and recreate Table 7 fresh
+    await tablesCollection.deleteMany({ tableNumber: 7 });
+    await tablesCollection.insertOne({
+      tableNumber: 7,
+      capacity: 6,
+      status: 'available',
+      currentSessionId: null,
+      qrCodeData: 'TABLE_7_TOKEN_UNASSIGNED',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
     
-    console.log('Successfully cleared Mojito items and updated Table 7 state to cleaning.');
+    console.log('Successfully deleted and recreated Table 7 and cleared all its sessions.');
   } catch (err) {
-    console.error('Failed to clear Table 7 orders/update table state:', err);
+    console.error('Failed to reset Table 7:', err);
   }
 }, 7000);
 
