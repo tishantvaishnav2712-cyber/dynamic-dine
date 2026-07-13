@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSocket } from '../context/SocketContext';
-import { ChefHat, Clock, AlertTriangle, Check, Flame } from 'lucide-react';
+import { ChefHat, Clock, AlertTriangle, Check, Flame, Bell } from 'lucide-react';
 import { API_URL } from '../config';
 
 const KitchenDashboard = () => {
@@ -99,8 +99,18 @@ const KitchenDashboard = () => {
             <p className="text-sm text-slate-500 dark:text-slate-400">Live culinary production pipeline</p>
           </div>
         </div>
-        <div className="glass-panel py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400">
-          Active Orders: {orders.length}
+        <div className="flex items-center gap-4">
+          <div className="relative p-2 bg-obsidian-800/40 rounded-xl border border-slate-700/50 flex items-center justify-center">
+            <Bell className={`w-5 h-5 text-neoncyan ${orders.some(o => o.overallStatus === 'pending') ? 'ringing-bell text-amber-500' : ''}`} />
+            {orders.filter(o => o.overallStatus === 'pending').length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full w-5.5 h-5.5 text-[10px] flex items-center justify-center font-black border border-obsidian-900">
+                {orders.filter(o => o.overallStatus === 'pending').length}
+              </span>
+            )}
+          </div>
+          <div className="glass-panel py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400">
+            Queue Size: {orders.length}
+          </div>
         </div>
       </div>
 

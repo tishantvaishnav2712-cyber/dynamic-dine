@@ -60,6 +60,7 @@ const CustomerPortal = () => {
 
   // Notifications
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+  const [foodReadyAlert, setFoodReadyAlert] = useState({ show: false, message: '' });
 
   // Get QR key on mount
   useEffect(() => {
@@ -117,6 +118,9 @@ const CustomerPortal = () => {
     socket.on('notification', ({ type, message, tableNumber: tNum }) => {
       if (type === 'order_ready' && parseInt(tNum) === parseInt(tableNumber)) {
         showToast('Your food is ready and being served!', 'success');
+        setFoodReadyAlert({ show: true, message: 'Your order is hot and ready! The waiter is bringing it to your table.' });
+        // Auto-close after 8 seconds
+        setTimeout(() => setFoodReadyAlert({ show: false, message: '' }), 8000);
       }
     });
 
@@ -483,6 +487,29 @@ const CustomerPortal = () => {
       {toast.show && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-80 bg-obsidian-800 border border-neoncyan/30 p-3 rounded-xl text-center shadow-lg text-xs font-semibold animate-pulse text-white flex items-center justify-center gap-2">
           <Clock className="w-4 h-4 text-neoncyan" /> {toast.message}
+        </div>
+      )}
+
+      {/* Food Ready Ringing Bell Overlay */}
+      {foodReadyAlert.show && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6">
+          <div className="bg-obsidian-800 border-2 border-neoncyan/40 p-8 rounded-3xl text-center max-w-sm w-full space-y-6 shadow-2xl relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-neoncyan/5 to-transparent pointer-events-none"></div>
+            <div className="inline-flex p-5 bg-neoncyan/15 rounded-full text-neoncyan mb-2 relative">
+              <span className="absolute inset-0 rounded-full bg-neoncyan/10 animate-ping"></span>
+              <Bell className="w-14 h-14 ringing-bell" />
+            </div>
+            <h3 className="text-2xl font-black tracking-tight text-white uppercase tracking-wider">🛎️ Order is Ready!</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-medium">
+              {foodReadyAlert.message}
+            </p>
+            <button
+              onClick={() => setFoodReadyAlert({ show: false, message: '' })}
+              className="w-full bg-neoncyan text-obsidian-900 font-extrabold py-3.5 rounded-xl hover:bg-neoncyan/95 transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 uppercase tracking-widest"
+            >
+              Great!
+            </button>
+          </div>
         </div>
       )}
 

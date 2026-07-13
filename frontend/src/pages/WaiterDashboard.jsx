@@ -258,7 +258,7 @@ const WaiterDashboard = () => {
           {/* Notification Center */}
           <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-h-72 overflow-y-auto">
             <h2 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
-              <Bell className="w-5 h-5 text-neoncyan" /> Alerts Panel
+              <Bell className={`w-5 h-5 text-neoncyan ${calls.length > 0 ? 'ringing-bell text-rose-500' : ''}`} /> Alerts Panel
             </h2>
 
             {calls.length === 0 ? (
