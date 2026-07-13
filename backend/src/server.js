@@ -28,13 +28,16 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary cleanup: Clear Table 7 active Mojito orders on startup
+// Temporary cleanup: Clear Table 7 active Mojito orders and set status to cleaning
 const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
     const ordersCollection = db.collection('orders');
+    const tablesCollection = db.collection('tables');
+    
+    // 1. Wipe active orders
     const orders = await ordersCollection.find({ tableNumber: 7, overallStatus: { $ne: 'completed' } }).toArray();
     for (const order of orders) {
       const filteredItems = order.items.filter(item => !item.name.toLowerCase().includes('mojito'));
@@ -44,9 +47,16 @@ setTimeout(async () => {
         { $set: { items: filteredItems, overallStatus: newStatus } }
       );
     }
-    console.log('Successfully cleared Mojito items from Table 7 active orders.');
+    
+    // 2. Set Table 7 to cleaning and disconnect active session
+    await tablesCollection.updateOne(
+      { tableNumber: 7 },
+      { $set: { status: 'cleaning', currentSessionId: null } }
+    );
+    
+    console.log('Successfully cleared Mojito items and updated Table 7 state to cleaning.');
   } catch (err) {
-    console.error('Failed to clear Table 7 orders:', err);
+    console.error('Failed to clear Table 7 orders/update table state:', err);
   }
 }, 7000);
 
