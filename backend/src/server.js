@@ -28,6 +28,24 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
+// Temporary cleanup: Clear Table 7 active Mojito orders on startup
+const Order = require('./models/Order');
+setTimeout(async () => {
+  try {
+    const orders = await Order.find({ tableNumber: 7, overallStatus: { $ne: 'completed' } });
+    for (const order of orders) {
+      order.items = order.items.filter(item => !item.name.toLowerCase().includes('mojito'));
+      if (order.items.length === 0) {
+        order.overallStatus = 'cancelled';
+      }
+      await order.save();
+    }
+    console.log('Successfully cleared Mojito items from Table 7 active orders.');
+  } catch (err) {
+    console.error('Failed to clear Table 7 orders:', err);
+  }
+}, 5000);
+
 const app = express();
 const server = http.createServer(app);
 
