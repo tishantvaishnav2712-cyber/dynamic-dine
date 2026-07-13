@@ -184,6 +184,9 @@ const WaiterDashboard = () => {
       if (data.success) {
         fetchActiveOrders();
         fetchTables();
+        if (selectedTable) {
+          selectTableCell(selectedTable);
+        }
       }
     } catch (err) {
       console.error(err);
