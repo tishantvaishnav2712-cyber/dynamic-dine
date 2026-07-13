@@ -61,6 +61,7 @@ const seedDatabase = async () => {
     await Category.deleteMany({});
     await Product.deleteMany({});
     console.log('Cleared all existing Categories and Products from database.');
+    return; // Exit here to leave the menu completely empty
 
     const seedCategory = async (name, description) => {
       let cat = await Category.findOne({ name });
