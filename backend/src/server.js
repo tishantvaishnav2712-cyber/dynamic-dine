@@ -28,43 +28,7 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary lookup: Link active orders to the new Mint Mojito product ID
-const mongoose = require('mongoose');
-setTimeout(async () => {
-  try {
-    const db = mongoose.connection.db;
-    if (!db) return;
-    const productsCollection = db.collection('products');
-    const ordersCollection = db.collection('orders');
-    
-    const newMojito = await productsCollection.findOne({ name: 'Mint Mojito' });
-    if (!newMojito) {
-      console.log('Mint Mojito product not found to link references.');
-      return;
-    }
-    
-    const orders = await ordersCollection.find({ overallStatus: { $ne: 'completed' } }).toArray();
-    for (const order of orders) {
-      let updated = false;
-      const updatedItems = order.items.map(item => {
-        if (item.name.toLowerCase().includes('mojito')) {
-          updated = true;
-          return { ...item, product: newMojito._id };
-        }
-        return item;
-      });
-      if (updated) {
-        await ordersCollection.updateOne(
-          { _id: order._id },
-          { $set: { items: updatedItems } }
-        );
-        console.log(`Updated order ${order._id} items with the new Mint Mojito ID.`);
-      }
-    }
-  } catch (err) {
-    console.error('Failed to link product references:', err);
-  }
-}, 8000);
+
 
 const app = express();
 const server = http.createServer(app);
