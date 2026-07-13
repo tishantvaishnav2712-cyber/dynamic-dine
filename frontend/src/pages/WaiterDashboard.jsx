@@ -96,7 +96,8 @@ const WaiterDashboard = () => {
     try {
       const { data } = await axios.get(`${API_URL}/tables`);
       if (data.success) {
-        setTables(data.tables);
+        const sorted = [...data.tables].sort((a, b) => a.tableNumber - b.tableNumber);
+        setTables(sorted);
       }
     } catch (err) {
       console.error(err);
