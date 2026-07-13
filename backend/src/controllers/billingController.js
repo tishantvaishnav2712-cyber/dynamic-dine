@@ -54,7 +54,10 @@ const settlePayment = async (req, res, next) => {
         const productId = item.product ? item.product._id.toString() : 'deleted-' + item.name;
 
         // Check if item already exists in consolidated invoice items
-        const existing = invoiceItems.find((i) => i.product.toString() === productId);
+        const existing = invoiceItems.find((i) => {
+          const checkId = i.product ? i.product.toString() : 'deleted-' + i.name;
+          return checkId === productId;
+        });
         if (existing) {
           existing.quantity += qty;
           existing.totalPrice = parseFloat((existing.quantity * existing.priceAtOrder).toFixed(2));
