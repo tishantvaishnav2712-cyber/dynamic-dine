@@ -28,37 +28,24 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 connectDB();
 seedDatabase();
 
-// Temporary cleanup: Reset Table 7 and clear its sessions
+// Temporary cleanup: Find original Mint Mojito ID on startup
 const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
-    const tablesCollection = db.collection('tables');
-    const sessionsCollection = db.collection('diningsessions');
     const ordersCollection = db.collection('orders');
-    
-    // 1. Delete all active sessions and orders linked to Table 7
-    await sessionsCollection.deleteMany({ tableNumber: 7 });
-    await ordersCollection.deleteMany({ tableNumber: 7 });
-    
-    // 2. Delete and recreate Table 7 fresh
-    await tablesCollection.deleteMany({ tableNumber: 7 });
-    await tablesCollection.insertOne({
-      tableNumber: 7,
-      capacity: 6,
-      status: 'available',
-      currentSessionId: null,
-      qrCodeData: 'TABLE_7_TOKEN_UNASSIGNED',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    
-    console.log('Successfully deleted and recreated Table 7 and cleared all its sessions.');
+    const order = await ordersCollection.findOne({ "items.name": { $regex: /mojito/i } });
+    if (order) {
+      const item = order.items.find(i => i.name.toLowerCase().includes('mojito'));
+      console.log('--- OLD PRODUCT ID IS:', item.product.toString());
+    } else {
+      console.log('--- No historical orders found containing Mojito items.');
+    }
   } catch (err) {
-    console.error('Failed to reset Table 7:', err);
+    console.error('Failed to run lookup:', err);
   }
-}, 7000);
+}, 5000);
 
 const app = express();
 const server = http.createServer(app);
