@@ -29,22 +29,26 @@ connectDB();
 seedDatabase();
 
 // Temporary cleanup: Clear Table 7 active Mojito orders on startup
-const Order = require('./models/Order');
+const mongoose = require('mongoose');
 setTimeout(async () => {
   try {
-    const orders = await Order.find({ tableNumber: 7, overallStatus: { $ne: 'completed' } });
+    const db = mongoose.connection.db;
+    if (!db) return;
+    const ordersCollection = db.collection('orders');
+    const orders = await ordersCollection.find({ tableNumber: 7, overallStatus: { $ne: 'completed' } }).toArray();
     for (const order of orders) {
-      order.items = order.items.filter(item => !item.name.toLowerCase().includes('mojito'));
-      if (order.items.length === 0) {
-        order.overallStatus = 'cancelled';
-      }
-      await order.save();
+      const filteredItems = order.items.filter(item => !item.name.toLowerCase().includes('mojito'));
+      const newStatus = filteredItems.length === 0 ? 'cancelled' : order.overallStatus;
+      await ordersCollection.updateOne(
+        { _id: order._id },
+        { $set: { items: filteredItems, overallStatus: newStatus } }
+      );
     }
     console.log('Successfully cleared Mojito items from Table 7 active orders.');
   } catch (err) {
     console.error('Failed to clear Table 7 orders:', err);
   }
-}, 5000);
+}, 7000);
 
 const app = express();
 const server = http.createServer(app);
