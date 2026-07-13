@@ -85,6 +85,9 @@ const seedDatabase = async () => {
     const breadsCat = await seedCategory('Indian Breads', 'Tandoori rotis, naans, parathas, and kulchas');
     const shakesCat = await seedCategory('Milkshakes', 'Thick creamy milkshakes');
     const dessertsCat = await seedCategory('Desserts', 'Hot brownies, mud pies, and sweet treats');
+    const beveragesCat = await seedCategory('Beverages', 'Refreshing mojitos, sodas, and mocktails');
+    const soupCat = await seedCategory('Soup', 'Creamy, spicy and clear vegetarian soups');
+    const globalStartersCat = await seedCategory('Starters (Global)', 'Chinese, Oriental, Mexican, and Thai starters');
 
     const defaultItems = [
       // Mexican Bar
@@ -273,7 +276,75 @@ const seedDatabase = async () => {
       { name: 'Chocolate Mud Pie', category: dessertsCat._id, description: 'Crumbly chocolate mud crust pie with dense chocolate filling, served with vanilla ice cream and hot chocolate sauce.', basePrice: 399.00 },
       { name: 'Fried Ice Cream', category: dessertsCat._id, description: 'Ice Cream Coated In Flour With Corn Flakes And Deep Fried, Served With Hot Chocolate Sauce And Cashew Nuts.', basePrice: 299.00 },
       { name: 'Gulab Jamun - 4pcs', category: dessertsCat._id, description: 'Soft cottage cheese dumplings soaked in warm cardamom flavored sugar syrup.', basePrice: 160.00 },
-      { name: 'Kala Jamun - 4pcs', category: dessertsCat._id, description: 'Dark, caramelised warm dumplings soaked in sweet syrup.', basePrice: 160.00 }
+      { name: 'Kala Jamun - 4pcs', category: dessertsCat._id, description: 'Dark, caramelised warm dumplings soaked in sweet syrup.', basePrice: 160.00 },
+
+      // Beverages
+      { name: 'Kiwi Mint Mojito', category: beveragesCat._id, description: 'Fresh Kiwi Chopped With Lemon, Mint, Mojito Syrup, Ice And Topped With Sprite.', basePrice: 200.00 },
+      { name: 'Fresh Watermelon Mojito', category: beveragesCat._id, description: 'Fresh Watermelon Chopped With Lemon, Mint, Mojito Syrup, Ice Topped With Sprite.', basePrice: 180.00 },
+      { name: 'Pomegranate Mojito', category: beveragesCat._id, description: 'Fresh Chopped Pomegranate With Lemon, Mint, Mojito Syrup Along With Crushed Ice And Topped With Sprite.', basePrice: 210.00 },
+      { name: 'Fresh Mint Mojito', category: beveragesCat._id, description: 'Fresh Mint Chopped With Lemon, Mint Syrup, Mojito Syrup Garnished With Lemon Slice.', basePrice: 170.00 },
+      { name: 'Strawberry Martini', category: beveragesCat._id, description: 'Fresh Strawberry Crush With Ice, Lemon, Soda, Strawberry Syrup, Black Salt. Topped With Sprite.', basePrice: 220.00 },
+      { name: 'Peach Martini', category: beveragesCat._id, description: 'Fresh Peach Crush With Ice, Lemon, Soda, Peach Syrup, Black Salt Garnished With Peach And Lemon Slice.', basePrice: 220.00 },
+      { name: 'Kiwi Martini', category: beveragesCat._id, description: 'Fresh Kiwi Chopped With Ice, Lemon, Mint, Kiwi Syrup, Black Salt Topped With Sprite.', basePrice: 180.00 },
+      { name: 'Fruit Punch', category: beveragesCat._id, description: 'All Time Favourite Combination Of Mix Fruit Juice.', basePrice: 220.00 },
+      { name: 'Pina Colada', category: beveragesCat._id, description: 'A Blend Combination Of Pineapple Juice, Sprite, Vanilla Ice Cream, Coconut Essence With Dash Of Lime.', basePrice: 220.00 },
+      { name: 'Strawberry Punch', category: beveragesCat._id, description: 'A Blend Combination Of Strawberry, Sprite, Strawberry Crush, Icecream With Dash Of Lime.', basePrice: 210.00 },
+      { name: 'Green Goddess', category: beveragesCat._id, description: 'A Blend Combination Of Khus Syrup, Sprite With Dash Of Lime.', basePrice: 200.00 },
+      { name: 'Mango Tango', category: beveragesCat._id, description: 'A Blend Of Chopped Mango, Ice Cream, Mint, Mango Tango Juice With Dash Of Lime.', basePrice: 220.00 },
+      { name: 'Blue Lagoon', category: beveragesCat._id, description: 'Combination Of Blue Curacao Syrup, Lemon Juice, Sugar, Lemonade Garnished With Lemon Slice.', basePrice: 180.00 },
+      { name: 'Pink Lady', category: beveragesCat._id, description: 'Combination Of Grenadine Syrup, Strawberry, Sugar, Orange, Milk Garnished With Lemon Slice.', basePrice: 190.00 },
+      { name: 'Cinderella', category: beveragesCat._id, description: 'Combination Of Lemon Juice, Orange Juice, Pineapple Juice, Grenadine Syrup Dash With Orange / Lemon Slice.', basePrice: 210.00 },
+      { name: 'Russia With Love', category: beveragesCat._id, description: 'Combination Of Mango Ice Cream/Juice, Soft Drink, Chocolate Syrup & Garnished with Cherry.', basePrice: 240.00 },
+      { name: 'Fresh Lime Soda (sweet/salted)', category: beveragesCat._id, description: 'Fresh lime juice with carbonated soda, served sweet, salted or mixed.', basePrice: 120.00 },
+      { name: 'Lassi (sweet/salted)', category: beveragesCat._id, description: 'Traditional yogurt based drink, served sweet or salted.', basePrice: 150.00 },
+      { name: 'Sp. Dry Fruit Lassi', category: beveragesCat._id, description: 'Rich yogurt lassi blended and loaded with almonds, cashews and pistachios.', basePrice: 200.00 },
+      { name: 'Butter Milk', category: beveragesCat._id, description: 'Refreshing churned spiced yogurt drink.', basePrice: 50.00 },
+
+      // Soups
+      { name: 'Cream Of Tomato Soup', category: soupCat._id, description: 'All Time Favourite Creamy Tomato Base Soup.', basePrice: 180.00 },
+      { name: 'Roasted Tomato Bellpepper', category: soupCat._id, description: 'Coloured Bellpepper, Tomato Roasted And Chopped With Black-green Olives, Chilli, Basil, Chilli Flakes And Oregano Cooked With Spices.', basePrice: 220.00 },
+      { name: 'Cheese Corn Tomato Soup', category: soupCat._id, description: 'Tomato Base Creamy Soup Cooked With Sweet-corn And Spices With Grated Cheese.', basePrice: 240.00 },
+      { name: 'Mexican Tortilla Soup', category: soupCat._id, description: 'A Colored Bell Pepper Soup With Two Types Of Beans With Spring Onion And Mexican Spices Garnished With Tortilla Chips And Parsley.', basePrice: 200.00 },
+      { name: 'Mexican Chilli Bean Soup', category: soupCat._id, description: 'A Spicy Soup Cooked With Two Type Of Beans, Coloured Bellpepper, Spring Onion And Added Mexican Spices. Garnished With Parsley.', basePrice: 200.00 },
+      { name: 'Jalapeno Cheese Soup', category: soupCat._id, description: 'A Rich Creamy Cheese Soup Cooked In Cheddar Cheese Along With Carrot, Yellow Onion, Jalapeno Peppers With Spices And Garnished With Green Onion.', basePrice: 200.00 },
+      { name: 'Broccoli Cheddar Cheese Soup', category: soupCat._id, description: 'A Rich Soup Cooked With Fresh Broccoli Paste, Cheddar Cheese, Spring Onion, Spices And Garnished With Spring Onion.', basePrice: 250.00 },
+      { name: 'Thai Coconut Soup', category: soupCat._id, description: 'Authentic Bold And Delicious Soup Cooked In Thai Red Curry Paste, Coconut Milk And Sliced Mushroom.', basePrice: 260.00 },
+      { name: 'Lemon Coriander Soup', category: soupCat._id, description: 'A Healthy Lemon Coriander Vitamin Rich Soup Cooked In Fresh Vegetable Stock With Chopped Coriander, Onion, Green Chillies, Garlic, Cabbage, Carrot And Garnished With Coriander.', basePrice: 200.00 },
+      { name: 'Tom Yum Soup', category: soupCat._id, description: 'A Traditional Spicy & Sour Thai Chinese Soup Cooked With Fresh English Vegetables, Mushrooms, French Beans, Carrot, Thai Spices And Garnished With Basil.', basePrice: 200.00 },
+      { name: 'Asian Green Soup', category: soupCat._id, description: 'A Spicy Thai Clear Soup Contains Stirred Fried Vegetable With Spices Along With Dash Of Lime.', basePrice: 200.00 },
+      { name: 'Creamy Cilantro Soup', category: soupCat._id, description: 'A Cilantro Flavoured French Soup In Mexican Cream Cooked In Coloured Bellpepper And Added Spices, Garnished With Parsley.', basePrice: 200.00 },
+      { name: 'Broccoli Almond Soup', category: soupCat._id, description: 'Healthy Creamy Soup Cooked With Broccoli And Almond Paste With Chopped Onion, Garlic, Celery And Added Spices. Garnished With Chopped Roasted Almond.', basePrice: 220.00 },
+      { name: 'Syantan Soup', category: soupCat._id, description: 'A Japanese Spicy Soup Cooked In Julienne Of English Vegetables Along With Sesame Oil, Basil, Tom Yum Paste And Added Spices And Garnished With Basil Leaves.', basePrice: 200.00 },
+      { name: 'Veg. Manchow Soup', category: soupCat._id, description: 'All Time Favourite Chinese Traditional Soup Cooked In Chopped Ginger, Garlic, Vegetables, Garnished With Crispy Fried Noodles And Chinese Spices.', basePrice: 200.00 },
+      { name: 'Veg. Hot & Soup Soup', category: soupCat._id, description: 'All Time Favourite Chinese Traditional Spicy Soup Cooked In Chopped Ginger, Garlic, Spices And Garnished With Coriander.', basePrice: 200.00 },
+
+      // Global Starters
+      { name: 'Devil Paneer', category: globalStartersCat._id, description: 'Diamond Cutting Of Cottage Cheese Coated, Deep Fried And Stirred With Spicy Red Curry Paste Along With Thai Spices, Crushed Peanuts, Coconut Milk And Garnished With Spring Onion.', basePrice: 350.00 },
+      { name: 'Dragon Cottage Cheese With Spinach Dust', category: globalStartersCat._id, description: 'Triangular Cutting Of Cottage Cheese Coated With Corn Flour, Deep Fried, Sauteed With Schezwan Sauce, Chinese Spices, Garnished With Crunch Of Spinach.', basePrice: 360.00 },
+      { name: 'Crispy Threaded Paneer', category: globalStartersCat._id, description: 'Finger Cut Of Cottage Cheese Coated With Chinese Spices, Corn Flakes And Deep Fried, Sauteed In Schezwan Sauce Garnish With Spring Onion And Coriander.', basePrice: 360.00 },
+      { name: 'Cheese Quesadilla', category: globalStartersCat._id, description: 'Green-black Olives, Sweet Corn, Basil And Spices With Processed Cheese Sauteed And Wrapped In Tortilla Sheet And Served With Salsa Curry And Sour Cream.', basePrice: 340.00 },
+      { name: 'Burritos Del Casa', category: globalStartersCat._id, description: 'Two Type Of Beans With Black Pepper, Olives Sauted With Spices And Processed Cheese Wrapped In Tortilla Sheet And Baked And Served With Salsa Curry And Sour Cream.', basePrice: 340.00 },
+      { name: 'Cheese Fondue', category: globalStartersCat._id, description: 'Accompanied With Sauteed Exotic Vegetables, Focaccia Whole Wheat Bread With Olives & Herbs, Served With Three Type Of Lavash Bread.', basePrice: 440.00 },
+      { name: 'Water Chestnut In Plum Sauce', category: globalStartersCat._id, description: 'Crispy Golden Fried Water Chestnuts & Spices Tossed In Plum Sauce.', basePrice: 350.00 },
+      { name: 'Nachos Supreme', category: globalStartersCat._id, description: 'Popular Mexican Snack Made Of Corn Chips And Served With Salsa Curry And Sauce.', basePrice: 280.00 },
+      { name: 'Tacos', category: globalStartersCat._id, description: 'A Traditional Mexican Dish Consisting Of Hand Sized Corn Tortilla Sheet, Wrapped With Two Type Of Beans Including Seasoning And Spices With Processed Cheese.', basePrice: 280.00 },
+      { name: 'Spicy Cheesy Spinach Ball', category: globalStartersCat._id, description: 'Chopped Spinach With Fried Garlic, Cheese Coated & Deep Fried With Added Spices And Served With Pesto Sauce', basePrice: 360.00 },
+      { name: 'American Cheese Ball', category: globalStartersCat._id, description: 'American Corn Crushed And Chopped With Coloured Bell Pepper With Three Type Of Cheese, Basil Deep Fried And Served With Thousand Sauce.', basePrice: 360.00 },
+      { name: 'Cottage Cheese Pesto', category: globalStartersCat._id, description: 'Finger Cutted Cottage Cheese Tossed With Added Spices In Pesto Sauce And Garnished With Basil Leaves.', basePrice: 399.00 },
+      { name: 'Paneer Signature Roll', category: globalStartersCat._id, description: 'Cubes Of Cottage Cheese With Italian Seasoning, Grated Cheese, Wrapped With Bread Sheet And Served With Salsa Curry And Sour Cream.', basePrice: 399.00 },
+      { name: 'Paneer Kurkure Short Glass', category: globalStartersCat._id, description: 'Finger Shaped Paneer Coated In Corn Flour And Deep Fried With Added Spices And Served In Peanut Sauce.', basePrice: 410.00 },
+      { name: 'Tortilla Roll', category: globalStartersCat._id, description: 'Diced Cottage Cheese With Rich Cream, Grated Cheese With Added Italian Spices, Rolled In Wheat Pancake And Pan Fried. Served With Salsa Curry, Sour Cream And Salad.', basePrice: 399.00 },
+      { name: 'Saute Mushrooms With Garlic', category: globalStartersCat._id, description: 'A Pan Fried Button Mushroom With Basil, Olive Oil, Lemon Juice, Garlic And Sauteed In Added Spices.', basePrice: 340.00 },
+      { name: 'Saute Veg.', category: globalStartersCat._id, description: 'Combination Of English Vegetables With Olive Oil, Basil, Lemon Juice With Added Spices And Sauteed.', basePrice: 300.00 },
+      { name: 'Bruschetta - 8 pcs', category: globalStartersCat._id, description: 'Chopped Coloured Bell Pepper With Olive Oil, Cheese And Crushed Black Pepper With Added Spices Topped On Loaf Of Bread Slice With Mozzarella Cheese And Baked.', basePrice: 340.00 },
+      { name: 'Chinmayi Veg.', category: globalStartersCat._id, description: 'Thai Special Contains Chopped Indian And English Vegetable Batter, Fried And Tossed With Thai Spicy Masala & Garnished With Basil Leaves.', basePrice: 320.00 },
+      { name: 'Crispy Veg. Salt & Pepper', category: globalStartersCat._id, description: 'Batter Of Chopped Indian And English Vegetable Is Fried And Tossed With Salt And Pepper.', basePrice: 300.00 },
+      { name: 'Paneer Chilli', category: globalStartersCat._id, description: 'Triangular Cutting Of Paneer, Bell Pepper, Spring Onion With Added Chinese Spices And Topped With Spring Onion.', basePrice: 360.00 },
+      { name: 'Veg. Manchurian', category: globalStartersCat._id, description: 'Deep Fried Chopped Indian Vegetable With Chinese Spices And Tossed Garnished With Spring Onion And Coriander.', basePrice: 250.00 },
+      { name: 'Veg. Spring Roll', category: globalStartersCat._id, description: 'Deep Fried Julienne Vegetables With Indian And Chinese Spices Wrapped In Thin Pancake.', basePrice: 280.00 },
+      { name: 'Crispy Veg.', category: globalStartersCat._id, description: 'Chopped Indian And English Vegetable Batter Fried And Tossed With Chinese Sauce And Spices.', basePrice: 300.00 },
+      { name: 'Garlic Bread - 8 pcs', category: globalStartersCat._id, description: 'Slices of French loaf topped with garlic butter and toasted.', basePrice: 260.00 },
+      { name: 'Cheese Garlic Bread - 8 pcs', category: globalStartersCat._id, description: 'Garlic bread slices loaded with melted mozzarella cheese.', basePrice: 299.00 }
     ];
 
     for (const item of defaultItems) {
