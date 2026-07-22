@@ -76,6 +76,9 @@ const seedDatabase = async () => {
     const chineseCat = await seedCategory('Chinese & Oriental', 'Hakka noodles, fried rice, and stir-fry main course dishes');
     const startersCat = await seedCategory('Starters', 'Delicious global and Indian starters');
     const soupCat = await seedCategory('Soup', 'Creamy, spicy and clear vegetarian soups');
+    const paneerCat = await seedCategory('Main Course', 'Exclusive gourmet vegetarian specialties');
+    const riceCat = await seedCategory('Rice Preparation', 'Biryanis, pulaos, and steamed rice options');
+    const breadsCat = await seedCategory('Indian Breads', 'Tandoori rotis, naans, and regional bread options');
     
     // 1. Seed Mint Mojito
     let mintMojito = await Product.findOne({ name: 'Mint Mojito' });
@@ -143,6 +146,57 @@ const seedDatabase = async () => {
         image: 'https://images.unsplash.com/photo-1547592165-e1d17fed6005?w=400&q=80'
       });
       console.log('Seeded Jalapeno Cheese Soup.');
+    }
+
+    // 5. Seed Paneer Butter Masala
+    let paneerButter = await Product.findOne({ name: 'Paneer Butter Masala' });
+    if (!paneerButter) {
+      await Product.create({
+        name: 'Paneer Butter Masala',
+        category: paneerCat._id,
+        description: 'Fresh cottage cheese cubes cooked in a rich, creamy, and mildly sweet onion tomato butter gravy.',
+        basePrice: 299.00,
+        currentPrice: 299.00,
+        minPrice: 220.00,
+        maxPrice: 450.00,
+        stock: 100,
+        image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&q=80'
+      });
+      console.log('Seeded Paneer Butter Masala.');
+    }
+
+    // 6. Seed Veg. Biryani
+    let vegBiryani = await Product.findOne({ name: 'Veg. Biryani' });
+    if (!vegBiryani) {
+      await Product.create({
+        name: 'Veg. Biryani',
+        category: riceCat._id,
+        description: 'Aromatic layered long-grain Basmati rice cooked with fresh mixed vegetables, herbs, and traditional spices.',
+        basePrice: 250.00,
+        currentPrice: 250.00,
+        minPrice: 180.00,
+        maxPrice: 380.00,
+        stock: 100,
+        image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=80'
+      });
+      console.log('Seeded Veg. Biryani.');
+    }
+
+    // 7. Seed Tandoori Butter Roti
+    let butterRoti = await Product.findOne({ name: 'Tandoori Butter Roti' });
+    if (!butterRoti) {
+      await Product.create({
+        name: 'Tandoori Butter Roti',
+        category: breadsCat._id,
+        description: 'Classic whole wheat flatbread baked in a tandoor clay oven and topped with fresh butter.',
+        basePrice: 50.00,
+        currentPrice: 50.00,
+        minPrice: 35.00,
+        maxPrice: 80.00,
+        stock: 100,
+        image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?w=400&q=80'
+      });
+      console.log('Seeded Tandoori Butter Roti.');
     }
     return; // Exit early so no other items are seeded
   } catch (error) {
