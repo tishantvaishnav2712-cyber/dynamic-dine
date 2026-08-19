@@ -30,6 +30,8 @@ seedDatabase();
 
 
 
+const { performanceLogger, performanceStats } = require('./middleware/performanceLogger');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -48,8 +50,34 @@ app.use((req, res, next) => {
 });
 
 // Middleware
+app.use(performanceLogger);
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Support base64 image uploads
+
+// Performance metrics endpoint
+app.get('/api/performance/metrics', async (req, res) => {
+  try {
+    const startDb = Date.now();
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    let dbPing = 0;
+    if (dbState === 1) {
+      await mongoose.connection.db.admin().ping();
+      dbPing = Date.now() - startDb;
+    }
+    const activeConnections = io.sockets.sockets.size;
+    res.json({
+      success: true,
+      dbStatus: dbState === 1 ? 'connected' : 'disconnected',
+      dbPingMs: dbPing,
+      avgApiLatencyMs: performanceStats.averageLatency || 0,
+      activeWebsocketConnections: activeConnections,
+      uptimeSeconds: Math.floor(process.uptime())
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // API Routers
 app.use('/api/auth', authRoutes);

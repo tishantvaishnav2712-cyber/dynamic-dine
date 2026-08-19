@@ -47,6 +47,7 @@ const StaffLayout = ({ children }) => {
   
   const [kitchenAlert, setKitchenAlert] = useState(false);
   const [waiterAlert, setWaiterAlert] = useState(false);
+  const [metrics, setMetrics] = useState({ latency: 0, ping: 0, conns: 1 });
 
   useEffect(() => {
     if (darkMode) {
@@ -55,6 +56,26 @@ const StaffLayout = ({ children }) => {
       document.body.classList.remove('dark');
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/performance/metrics`);
+        if (data.success) {
+          setMetrics({
+            latency: data.avgApiLatencyMs,
+            ping: data.dbPingMs,
+            conns: data.activeWebsocketConnections
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchMetrics();
+    const metricsInterval = setInterval(fetchMetrics, 10000);
+    return () => clearInterval(metricsInterval);
+  }, []);
 
   useEffect(() => {
     // Fetch initial state for alerts on load
@@ -124,7 +145,19 @@ const StaffLayout = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
             <Activity className="w-6 h-6 text-neoncyan" />
-            <span className="font-black tracking-tight text-slate-800 dark:text-white text-lg">Dynamic Dine</span>
+            <span className="font-black tracking-tight text-slate-800 dark:text-white text-lg mr-4">Dynamic Dine</span>
+            
+            {/* Live Health Status Monitor */}
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Healthy</span>
+              <span className="text-slate-500">|</span>
+              <span>DB: {metrics.ping}ms</span>
+              <span className="text-slate-500">|</span>
+              <span>API: {metrics.latency}ms</span>
+              <span className="text-slate-500">|</span>
+              <span>WS: {metrics.conns}</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-6">
