@@ -170,11 +170,16 @@ const CustomerPortal = () => {
 
   const startDining = async (e) => {
     e.preventDefault();
+    const cleanPhone = custPhone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      showToast('Mobile number must be exactly 10 digits', 'error');
+      return;
+    }
     try {
       const { data } = await axios.post(`${API_URL}/sessions/start`, {
         tableNumber,
         customerName: custName,
-        customerPhone: custPhone,
+        customerPhone: cleanPhone,
         qrKey,
       });
 
@@ -451,14 +456,15 @@ const CustomerPortal = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number (10 Digits)</label>
               <input
-                type="text"
+                type="tel"
                 required
+                maxLength={10}
                 value={custPhone}
-                onChange={(e) => setCustPhone(e.target.value)}
+                onChange={(e) => setCustPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 className="w-full bg-obsidian-800 border border-slate-700/50 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-neoncyan text-sm"
-                placeholder="Enter mobile number"
+                placeholder="Enter 10-digit mobile number"
               />
             </div>
           </div>
