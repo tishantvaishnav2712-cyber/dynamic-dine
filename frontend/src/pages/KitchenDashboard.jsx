@@ -148,6 +148,13 @@ const KitchenDashboard = () => {
                 className={`border p-5 rounded-2xl flex flex-col justify-between shadow-md transition-all ${ageBgClass} ${ageBorderClass}`}
               >
                 <div>
+                  {minutesElapsed >= 12 && order.overallStatus !== 'served' && (
+                    <div className="bg-rose-500 text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider mb-3 flex items-center justify-between shadow-lg shadow-rose-500/20 animate-pulse">
+                      <span className="flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> OVERDUE KITCHEN ORDER</span>
+                      <span>{minutesElapsed}m elapsed</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center border-b border-slate-300 dark:border-slate-700/50 pb-3 mb-3">
                     <div>
                       <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Table</span>

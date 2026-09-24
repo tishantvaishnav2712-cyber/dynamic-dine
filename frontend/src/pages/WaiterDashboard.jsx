@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSocket } from '../context/SocketContext';
-import { TableProperties, Bell, DollarSign, RefreshCw, AlertCircle, ShoppingCart } from 'lucide-react';
+import { TableProperties, Bell, DollarSign, RefreshCw, AlertCircle, ShoppingCart, Printer } from 'lucide-react';
 import { API_URL } from '../config';
 
 const WaiterDashboard = () => {
@@ -195,6 +195,58 @@ const WaiterDashboard = () => {
 
   const dismissCall = (idx) => {
     setCalls((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const printThermalReceipt = () => {
+    if (!selectedSession) return;
+    const printWindow = window.open('', '_blank', 'width=380,height=550');
+    if (!printWindow) return;
+    
+    const itemsList = selectedSession.orders?.flatMap(o => o.items) || [];
+    const itemsHtml = itemsList.map(item => `
+      <tr>
+        <td style="text-align:left; padding:4px 0;">${item.name} x${item.quantity}</td>
+        <td style="text-align:right; padding:4px 0;">₹${(item.priceAtOrder * item.quantity).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const sub = selectedSession.runningTotal || 0;
+    const gst = sub * 0.05;
+    const serv = sub * serviceCharge;
+    const grand = sub + gst + serv;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Thermal Receipt - Table ${selectedTable?.tableNumber}</title>
+          <style>
+            body { font-family: 'Courier New', Courier, monospace; padding: 15px; width: 260px; margin: 0 auto; color: #000; }
+            h2 { text-align: center; margin: 2px 0; font-size: 16px; }
+            p { text-align: center; margin: 3px 0; font-size: 11px; }
+            table { width: 100%; border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin: 10px 0; font-size: 11px; }
+            .right { text-align: right; }
+            .total { font-weight: bold; font-size: 13px; border-top: 1px double #000; padding-top: 4px; }
+          </style>
+        </head>
+        <body>
+          <h2>DYNAMIC DINE POS</h2>
+          <p>Table ${selectedTable?.tableNumber} | Guest: ${selectedSession.customerName || 'Customer'}</p>
+          <p>${new Date().toLocaleString()}</p>
+          <table>
+            <thead><tr><th style="text-align:left">Item</th><th style="text-align:right">Price</th></tr></thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <p class="right">Subtotal: ₹${sub.toFixed(2)}</p>
+          <p class="right">GST (5%): ₹${gst.toFixed(2)}</p>
+          <p class="right">Service (${(serviceCharge * 100).toFixed(0)}%): ₹${serv.toFixed(2)}</p>
+          <p class="right total">GRAND TOTAL: ₹${grand.toFixed(2)}</p>
+          <p style="margin-top:15px; font-weight:bold;">Thank you for dining with us!</p>
+          <script>window.onload = function() { window.print(); setTimeout(() => window.close(), 500); }</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -424,17 +476,26 @@ const WaiterDashboard = () => {
                         </div>
                       )}
 
-                      <button
-                        type="submit"
-                        disabled={!selectedSession.billRequested}
-                        className={`w-full font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1 ${
-                          selectedSession.billRequested
-                            ? 'bg-neoncyan text-obsidian-900 hover:bg-neoncyan/95 cursor-pointer shadow-lg shadow-neoncyan/15'
-                            : 'bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed'
-                        }`}
-                      >
-                        {selectedSession.billRequested ? 'Settle & Check Out' : 'Checkout Disabled'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={printThermalReceipt}
+                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-neoncyan" /> Print Receipt
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!selectedSession.billRequested}
+                          className={`flex-1 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1 ${
+                            selectedSession.billRequested
+                              ? 'bg-neoncyan text-obsidian-900 hover:bg-neoncyan/95 cursor-pointer shadow-lg shadow-neoncyan/15'
+                              : 'bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed'
+                          }`}
+                        >
+                          {selectedSession.billRequested ? 'Settle & Check Out' : 'Checkout Disabled'}
+                        </button>
+                      </div>
                     </form>
                   </div>
                 </div>
