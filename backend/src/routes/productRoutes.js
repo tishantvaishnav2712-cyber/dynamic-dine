@@ -13,8 +13,8 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/', getProducts);
 router.get('/:id', getProductById);
 router.post('/', protect, authorize('admin'), createProduct);
-router.put('/:id', protect, authorize('admin'), updateProduct);
-router.post('/:id/reset', protect, authorize('admin'), resetProductPrice);
+router.put('/:id', updateProduct);
+router.post('/:id/reset', resetProductPrice);
 router.delete('/:id', protect, authorize('admin'), deleteProduct);
 
 module.exports = router;

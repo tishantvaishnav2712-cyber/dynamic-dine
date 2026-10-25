@@ -66,10 +66,13 @@ const seedDatabase = async () => {
       return cat;
     };
 
-    // Wipe all existing categories and products to start completely fresh
-    await Category.deleteMany({});
-    await Product.deleteMany({});
-    console.log('Cleared all existing Categories and Products from database.');
+    // Only seed default categories & products if the database is completely empty
+    const productCount = await Product.countDocuments();
+    if (productCount > 0) {
+      console.log(`Database already contains ${productCount} products. Skipping seeding to preserve your custom menu items.`);
+      return;
+    }
+    console.log('Database empty. Seeding initial categories and products...');
 
     // Seed Categories
     const beveragesCat = await seedCategory('Beverages', 'Refreshing mojitos, sodas, and mocktails');

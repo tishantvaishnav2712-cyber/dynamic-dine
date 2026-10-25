@@ -16,7 +16,9 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
-  X
+  X,
+  Edit2,
+  Check
 } from 'lucide-react';
 import { API_URL } from '../config';
 
@@ -61,6 +63,61 @@ const CustomerPortal = () => {
   // Notifications
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const [foodReadyAlert, setFoodReadyAlert] = useState({ show: false, message: '' });
+
+  // Dish Specifications Edit Modal State
+  const [editProductModal, setEditProductModal] = useState({
+    show: false,
+    _id: '',
+    name: '',
+    description: '',
+    basePrice: '',
+    currentPrice: '',
+    minPrice: '',
+    maxPrice: '',
+    stock: '',
+    image: '',
+  });
+
+  const handleOpenEditModal = (e, prod) => {
+    e.stopPropagation();
+    setEditProductModal({
+      show: true,
+      _id: prod._id,
+      name: prod.name || '',
+      description: prod.description || '',
+      basePrice: prod.basePrice !== undefined ? prod.basePrice : '',
+      currentPrice: prod.currentPrice !== undefined ? prod.currentPrice : '',
+      minPrice: prod.minPrice !== undefined ? prod.minPrice : '',
+      maxPrice: prod.maxPrice !== undefined ? prod.maxPrice : '',
+      stock: prod.stock !== undefined ? prod.stock : '',
+      image: prod.image || '',
+    });
+  };
+
+  const handleSaveProductEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: editProductModal.name,
+        description: editProductModal.description,
+        basePrice: parseFloat(editProductModal.basePrice),
+        currentPrice: editProductModal.currentPrice !== '' ? parseFloat(editProductModal.currentPrice) : parseFloat(editProductModal.basePrice),
+        minPrice: editProductModal.minPrice !== '' ? parseFloat(editProductModal.minPrice) : undefined,
+        maxPrice: editProductModal.maxPrice !== '' ? parseFloat(editProductModal.maxPrice) : undefined,
+        stock: parseInt(editProductModal.stock, 10),
+        image: editProductModal.image,
+      };
+
+      const { data } = await axios.put(`${API_URL}/products/${editProductModal._id}`, payload);
+      if (data.success) {
+        setEditProductModal((prev) => ({ ...prev, show: false }));
+        showToast('Dish specifications updated successfully!', 'success');
+        fetchMenu();
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update dish', 'error');
+    }
+  };
 
   // Get QR key on mount
   useEffect(() => {
@@ -645,14 +702,27 @@ const CustomerPortal = () => {
                           <img
                             src={product.image}
                             alt={product.name}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80';
+                            }}
                             className="w-14 h-14 object-cover rounded-xl border border-slate-700 mr-3 shrink-0"
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-white text-sm truncate">{product.name}</span>
-                            {flashState === 'up' && <TrendingUp className="w-3.5 h-3.5 text-neongreen shrink-0" />}
-                            {flashState === 'down' && <TrendingDown className="w-3.5 h-3.5 text-neonred shrink-0" />}
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="font-bold text-white text-sm truncate">{product.name}</span>
+                              {flashState === 'up' && <TrendingUp className="w-3.5 h-3.5 text-neongreen shrink-0" />}
+                              {flashState === 'down' && <TrendingDown className="w-3.5 h-3.5 text-neonred shrink-0" />}
+                            </div>
+                            <button
+                              onClick={(e) => handleOpenEditModal(e, product)}
+                              className="text-[10px] text-neoncyan hover:bg-neoncyan/10 border border-neoncyan/30 px-1.5 py-0.5 rounded-md flex items-center gap-1 cursor-pointer shrink-0 font-semibold"
+                              title="Edit dish specifications"
+                            >
+                              <Edit2 className="w-2.5 h-2.5" /> Edit
+                            </button>
                           </div>
                           <p className="text-[10px] text-slate-400 line-clamp-2 mt-1">{product.description}</p>
                           <div className="flex items-center gap-2 mt-2">
@@ -884,6 +954,151 @@ const CustomerPortal = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Dish Specifications Modal */}
+      {editProductModal.show && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-sm glass-panel p-6 rounded-2xl border border-slate-800 relative shadow-2xl my-auto text-left">
+            <button
+              onClick={() => setEditProductModal((prev) => ({ ...prev, show: false }))}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+              <div className="p-1.5 bg-neoncyan/10 rounded-lg text-neoncyan">
+                <Edit2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">Edit Dish Specifications</h3>
+                <p className="text-[10px] text-slate-400">Update price, photo, and recipe details</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveProductEdit} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Dish Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editProductModal.name}
+                  onChange={(e) => setEditProductModal((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-3 text-xs text-white focus:outline-none focus:border-neoncyan"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Base Price (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editProductModal.basePrice}
+                    onChange={(e) => setEditProductModal((prev) => ({ ...prev, basePrice: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-neoncyan"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Live Price (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editProductModal.currentPrice}
+                    onChange={(e) => setEditProductModal((prev) => ({ ...prev, currentPrice: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-2.5 text-xs text-neoncyan font-bold focus:outline-none focus:border-neoncyan"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Min Price (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editProductModal.minPrice}
+                    onChange={(e) => setEditProductModal((prev) => ({ ...prev, minPrice: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-neoncyan"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Max Price (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editProductModal.maxPrice}
+                    onChange={(e) => setEditProductModal((prev) => ({ ...prev, maxPrice: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-neoncyan"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Stock Quantity</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={editProductModal.stock}
+                  onChange={(e) => setEditProductModal((prev) => ({ ...prev, stock: e.target.value }))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-3 text-xs text-white focus:outline-none focus:border-neoncyan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Description</label>
+                <textarea
+                  rows="2"
+                  value={editProductModal.description}
+                  onChange={(e) => setEditProductModal((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-3 text-xs text-white focus:outline-none focus:border-neoncyan resize-none"
+                  placeholder="Ingredients and cooking style..."
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">Dish Image URL</label>
+                <div className="flex gap-2 items-center">
+                  {editProductModal.image && (
+                    <img
+                      src={editProductModal.image}
+                      alt="Preview"
+                      className="w-10 h-10 object-cover rounded-lg border border-slate-700 shrink-0"
+                    />
+                  )}
+                  <input
+                    type="url"
+                    value={editProductModal.image}
+                    onChange={(e) => setEditProductModal((prev) => ({ ...prev, image: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-1.5 px-3 text-xs text-white focus:outline-none focus:border-neoncyan"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditProductModal((prev) => ({ ...prev, show: false }))}
+                  className="px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-xl bg-neoncyan text-obsidian-900 text-xs font-bold hover:bg-neoncyan/95 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <Check className="w-3.5 h-3.5" /> Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
