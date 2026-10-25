@@ -121,6 +121,7 @@ const getActiveSession = async (req, res, next) => {
         populate: {
           path: 'items.product',
           model: 'Product',
+          select: 'name currentPrice basePrice category isAvailable',
         },
       })
       .populate('table');

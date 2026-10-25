@@ -48,6 +48,7 @@ const CustomerPortal = () => {
   const [cart, setCart] = useState({});
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // Status/Tracker states
   const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'orders' | 'bill'
@@ -200,25 +201,25 @@ const CustomerPortal = () => {
   const fetchActiveSession = async (key, explicitToken = null) => {
     try {
       const token = explicitToken || session?.sessionToken || localStorage.getItem(`table_${tableNumber}_session`);
+      if (!token) {
+        setHasSession(false);
+        return;
+      }
       const { data } = await axios.get(`${API_URL}/sessions/active/${tableNumber}?token=${token}`);
-      if (data.success && data.active) {
+      if (data.success && data.active && data.session) {
         setSession(data.session);
+        setHasSession(true);
         localStorage.setItem(`table_${tableNumber}_session`, data.session.sessionToken);
         setPlacedOrders(data.session.orders || []);
         fetchCategories();
         fetchMenu();
-      } else {
-        if (hasSession) {
-          localStorage.removeItem(`table_${tableNumber}_session`);
-          localStorage.removeItem(`table_${tableNumber}_key`);
-          setIsCheckedOut(true);
-        } else {
-          setHasSession(false);
-        }
+      } else if (data.success && data.session && data.session.paymentStatus === 'paid') {
+        localStorage.removeItem(`table_${tableNumber}_session`);
+        localStorage.removeItem(`table_${tableNumber}_key`);
+        setIsCheckedOut(true);
       }
     } catch (err) {
-      console.error(err);
-      showToast(err.response?.data?.message || 'Failed to sync dining session', 'error');
+      console.error('Session sync error:', err);
     }
   };
 
@@ -293,8 +294,9 @@ const CustomerPortal = () => {
 
   const placeOrder = async () => {
     const cartItems = Object.values(cart);
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || isPlacingOrder) return;
 
+    setIsPlacingOrder(true);
     try {
       const { data } = await axios.post(`${API_URL}/orders`, {
         sessionId: session._id,
@@ -311,11 +313,13 @@ const CustomerPortal = () => {
         setCart({});
         setSpecialInstructions('');
         setCartOpen(false);
-        fetchActiveSession(qrKey);
+        await fetchActiveSession(qrKey, session?.sessionToken);
         setActiveTab('orders');
       }
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to place order', 'error');
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -341,18 +345,20 @@ const CustomerPortal = () => {
 
   const getActiveInvoiceItems = () => {
     const itemsMap = {};
-    placedOrders.forEach((order) => {
-      if (order.overallStatus === 'cancelled') return;
-      order.items.forEach((item) => {
-        if (item.status === 'cancelled') return;
-        const key = item.product?._id || item.product;
+    (placedOrders || []).forEach((order) => {
+      if (!order || order.overallStatus === 'cancelled') return;
+      (order.items || []).forEach((item) => {
+        if (!item || item.status === 'cancelled') return;
+        const key = item.product?._id || item.product || item.name;
+        const price = Number(item.priceAtOrder) || 0;
+        const qty = Number(item.quantity) || 1;
         if (itemsMap[key]) {
-          itemsMap[key].quantity += item.quantity;
+          itemsMap[key].quantity += qty;
         } else {
           itemsMap[key] = {
-            name: item.name,
-            quantity: item.quantity,
-            priceAtOrder: item.priceAtOrder,
+            name: item.name || 'Item',
+            quantity: qty,
+            priceAtOrder: price,
           };
         }
       });
@@ -361,23 +367,20 @@ const CustomerPortal = () => {
   };
 
   const activeInvoiceItems = getActiveInvoiceItems();
-  const invoiceSubtotal = activeInvoiceItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0);
+  const invoiceSubtotal = activeInvoiceItems.reduce(
+    (sum, item) => sum + ((Number(item.priceAtOrder) || 0) * (Number(item.quantity) || 1)),
+    0
+  );
   const invoiceGst = parseFloat((invoiceSubtotal * 0.05).toFixed(2));
   const invoiceTotal = parseFloat((invoiceSubtotal + invoiceGst).toFixed(2));
 
   const handleCheckoutDone = () => {
     setIsCheckedOut(false);
     setHasSession(false);
-    setVerified(false);
     setSession(null);
-    
-    // Attempt to close the browser tab
-    window.close();
-    
-    // Fallback: redirect to a blank page to exit the website
-    setTimeout(() => {
-      window.location.href = 'about:blank';
-    }, 100);
+    setPlacedOrders([]);
+    setCart({});
+    setActiveTab('menu');
   };
 
   // Render layouts
@@ -401,7 +404,7 @@ const CustomerPortal = () => {
             onClick={handleCheckoutDone}
             className="w-full bg-neoncyan text-obsidian-900 font-black py-3 rounded-xl hover:bg-neoncyan/95 transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 uppercase tracking-wider"
           >
-            Exit Portal
+            Start New Dining Session
           </button>
         </div>
       </div>
@@ -720,7 +723,7 @@ const CustomerPortal = () => {
                 No orders placed yet. Add items to your cart and place an order!
               </div>
             ) : (
-              placedOrders.map((order, oIdx) => (
+              placedOrders.filter(Boolean).map((order, oIdx) => (
                 <div key={order._id || oIdx} className="bg-obsidian-800/80 border border-slate-800 p-4 rounded-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-700/50 pb-2">
                     <span className="text-xs font-black text-slate-300">Order #{oIdx + 1}</span>
@@ -733,17 +736,21 @@ const CustomerPortal = () => {
                         ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                         : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                     }`}>
-                      {order.overallStatus}
+                      {order.overallStatus || 'Pending'}
                     </span>
                   </div>
 
                   <ul className="space-y-2 text-xs">
-                    {order.items.map((item, idx) => (
-                      <li key={idx} className="flex justify-between text-slate-300">
-                        <span>{item.name} <span className="text-slate-500 font-bold">x{item.quantity}</span></span>
-                        <span className="font-semibold text-white">₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
-                      </li>
-                    ))}
+                    {(order.items || []).map((item, idx) => {
+                      const price = Number(item?.priceAtOrder) || 0;
+                      const qty = Number(item?.quantity) || 1;
+                      return (
+                        <li key={item?._id || idx} className="flex justify-between text-slate-300">
+                          <span>{item?.name || 'Dish'} <span className="text-slate-500 font-bold">x{qty}</span></span>
+                          <span className="font-semibold text-white">₹{(price * qty).toFixed(2)}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   {/* Status Timeline */}
@@ -787,12 +794,16 @@ const CustomerPortal = () => {
               {activeInvoiceItems.length === 0 ? (
                 <div className="text-center py-4 text-xs text-slate-500">No active items ordered yet.</div>
               ) : (
-                activeInvoiceItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-xs text-slate-300">
-                    <span>{item.name} (x{item.quantity})</span>
-                    <span>₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))
+                activeInvoiceItems.map((item, idx) => {
+                  const price = Number(item?.priceAtOrder) || 0;
+                  const qty = Number(item?.quantity) || 1;
+                  return (
+                    <div key={idx} className="flex justify-between text-xs text-slate-300">
+                      <span>{item?.name || 'Dish'} (x{qty})</span>
+                      <span>₹{(price * qty).toFixed(2)}</span>
+                    </div>
+                  );
+                })
               )}
             </div>
 
@@ -884,9 +895,19 @@ const CustomerPortal = () => {
 
                 <button
                   onClick={placeOrder}
-                  className="w-full bg-neoncyan text-obsidian-900 font-bold py-3 rounded-xl hover:bg-neoncyan/95 transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 flex items-center justify-center gap-1.5"
+                  disabled={isPlacingOrder}
+                  className={`w-full bg-neoncyan text-obsidian-900 font-bold py-3 rounded-xl transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 flex items-center justify-center gap-2 ${
+                    isPlacingOrder ? 'opacity-70 cursor-not-allowed' : 'hover:bg-neoncyan/95'
+                  }`}
                 >
-                  Send Order to Chef
+                  {isPlacingOrder ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-obsidian-900 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending Order to Kitchen...</span>
+                    </>
+                  ) : (
+                    <span>Send Order to Chef</span>
+                  )}
                 </button>
               </div>
             )}

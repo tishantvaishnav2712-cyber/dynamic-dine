@@ -3,6 +3,7 @@ const DiningSession = require('../models/DiningSession');
 const Product = require('../models/Product');
 const PricingConfig = require('../models/PricingConfig');
 const PricingHistory = require('../models/PricingHistory');
+const { invalidateProductCache } = require('./productController');
 
 // @desc    Place a new order for a table
 // @route   POST /api/orders
@@ -32,12 +33,19 @@ const createOrder = async (req, res, next) => {
       throw new Error('Cannot add orders to a closed dining session');
     }
 
+    // Single batch query for all products, excluding the heavy base64 image!
+    const productIds = items.map((i) => i.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).select('-image');
+    const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+
     const processedItems = [];
     let orderSubtotal = 0.00;
+    const bulkStockUpdates = [];
+    const productsToEvaluate = [];
 
     // Verify stock and fetch prices for each item
     for (const item of items) {
-      const product = await Product.findById(item.productId);
+      const product = productMap.get(item.productId.toString());
       if (!product) {
         res.status(404);
         throw new Error(`Product not found`);
@@ -66,16 +74,28 @@ const createOrder = async (req, res, next) => {
         status: 'pending',
       });
 
-      // Deduct stock
-      product.stock -= item.quantity;
-      
-      // Increment demandScore by order quantity
-      product.demandScore += item.quantity;
-      await product.save();
+      // Prepare atomic stock & demandScore update (50 bytes instead of 500 KB!)
+      bulkStockUpdates.push({
+        updateOne: {
+          filter: { _id: product._id },
+          update: {
+            $inc: {
+              stock: -item.quantity,
+              demandScore: item.quantity,
+            },
+          },
+        },
+      });
 
-      // Log/Trigger instant pricing review for ordered items
-      // (This makes prices react instantly to orders for a better user experience!)
-      await evaluateProductPricingOnOrder(product, item.quantity, req.io);
+      // Track product with updated local state for pricing evaluation
+      product.stock -= item.quantity;
+      product.demandScore += item.quantity;
+      productsToEvaluate.push({ product, quantity: item.quantity });
+    }
+
+    // Execute all stock and demandScore updates in ONE atomic bulkWrite
+    if (bulkStockUpdates.length > 0) {
+      await Product.bulkWrite(bulkStockUpdates);
     }
 
     // Create the order document
@@ -89,12 +109,20 @@ const createOrder = async (req, res, next) => {
 
     // Update dining session running total and orders array
     session.orders.push(order._id);
-    session.runningTotal += orderSubtotal;
+    session.runningTotal = parseFloat((session.runningTotal + orderSubtotal).toFixed(2));
     await session.save();
 
-    // Populate order product details for socket emit
+    // Trigger instant pricing review for ordered items (using atomic updateOne)
+    for (const { product, quantity } of productsToEvaluate) {
+      await evaluateProductPricingOnOrder(product, quantity, req.io);
+    }
+
+    // Invalidate product catalog cache so stock & live prices reflect immediately
+    invalidateProductCache();
+
+    // Populate order product details for socket emit WITHOUT base64 image (2 KB instead of 11.5 MB!)
     const populatedOrder = await Order.findById(order._id)
-      .populate('items.product')
+      .populate({ path: 'items.product', select: 'name currentPrice basePrice category isAvailable' })
       .populate('session');
 
     // Broadcast new order to Kitchen and Waiter dashboards
@@ -148,7 +176,8 @@ const evaluateProductPricingOnOrder = async (product, quantity, io) => {
 
   if (newPrice !== previousPrice) {
     product.currentPrice = newPrice;
-    await product.save();
+    // Atomic updateOne instead of sending full document with base64 image!
+    await Product.updateOne({ _id: product._id }, { $set: { currentPrice: newPrice } });
 
     const percentageChanged = ((newPrice - previousPrice) / previousPrice) * 100;
 
@@ -182,7 +211,7 @@ const getActiveOrders = async (req, res, next) => {
     const orders = await Order.find({
       overallStatus: { $in: ['pending', 'accepted', 'preparing', 'ready', 'served'] },
     })
-      .populate('items.product')
+      .populate({ path: 'items.product', select: 'name currentPrice basePrice category isAvailable' })
       .populate('session')
       .sort({ createdAt: 1 });
 
@@ -200,7 +229,9 @@ const updateOrderStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, itemId } = req.body; // If itemId is provided, update that item; else update whole order status
 
-    const order = await Order.findById(id).populate('session').populate('items.product');
+    const order = await Order.findById(id)
+      .populate('session')
+      .populate({ path: 'items.product', select: 'name currentPrice basePrice category isAvailable' });
     if (!order) {
       res.status(404);
       throw new Error('Order not found');
