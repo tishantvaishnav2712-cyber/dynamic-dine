@@ -57,6 +57,15 @@ app.use(performanceLogger);
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Support base64 image uploads
 
+// Root health check endpoint for Render
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Dynamic Dine API Server is live and healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Performance metrics endpoint
 app.get('/api/performance/metrics', async (req, res) => {
   try {
