@@ -111,12 +111,16 @@ const AdminDashboard = () => {
     socket.on('table_status_updated', () => fetchAnalytics());
     socket.on('payment_completed', () => fetchAnalytics());
     socket.on('order_placed', () => fetchAnalytics());
+    socket.on('pricing_config_updated', (cfg) => {
+      if (cfg) setPricingConfig(cfg);
+    });
 
     return () => {
       socket.off('price_updated');
       socket.off('table_status_updated');
       socket.off('payment_completed');
       socket.off('order_placed');
+      socket.off('pricing_config_updated');
     };
   }, [socket, selectedHistoryProductId, token]);
 
@@ -182,6 +186,27 @@ const AdminDashboard = () => {
 
   const handleConfigChange = (field, val) => {
     setPricingConfig((prev) => ({ ...prev, [field]: val }));
+  };
+
+  const handleToggleGlobalPricing = async (enabled) => {
+    // 1. Optimistically update local UI state immediately
+    setPricingConfig((prev) => ({ ...prev, globalEnabled: enabled }));
+
+    try {
+      // 2. Instantly persist to the database
+      const { data } = await axios.put(`${API_URL}/pricing/config`, {
+        ...pricingConfig,
+        globalEnabled: enabled,
+      });
+      if (data.success) {
+        setPricingConfig(data.config);
+      }
+    } catch (err) {
+      console.error('Failed to update dynamic pricing state:', err);
+      // Revert if request failed
+      setPricingConfig((prev) => ({ ...prev, globalEnabled: !enabled }));
+      alert('Failed to update dynamic pricing state. Please verify your connection.');
+    }
   };
 
   const savePricingConfig = async () => {
@@ -552,22 +577,28 @@ const AdminDashboard = () => {
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Dynamic Pricing State</label>
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleConfigChange('globalEnabled', true)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${
-                    pricingConfig.globalEnabled ? 'bg-neoncyan text-obsidian-900 border-neoncyan' : 'bg-obsidian-800 text-slate-400 border-slate-700'
+                  type="button"
+                  onClick={() => handleToggleGlobalPricing(true)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    pricingConfig.globalEnabled ? 'bg-neoncyan text-obsidian-900 border-neoncyan shadow-md shadow-neoncyan/20' : 'bg-obsidian-800 text-slate-400 border-slate-700 hover:text-white'
                   }`}
                 >
                   Enabled
                 </button>
                 <button
-                  onClick={() => handleConfigChange('globalEnabled', false)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${
-                    !pricingConfig.globalEnabled ? 'bg-rose-500 text-white border-rose-500' : 'bg-obsidian-800 text-slate-400 border-slate-700'
+                  type="button"
+                  onClick={() => handleToggleGlobalPricing(false)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    !pricingConfig.globalEnabled ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20' : 'bg-obsidian-800 text-slate-400 border-slate-700 hover:text-white'
                   }`}
                 >
                   Disabled
                 </button>
               </div>
+              <p className={`text-[10px] font-semibold flex items-center gap-1.5 mt-1 ${pricingConfig.globalEnabled ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${pricingConfig.globalEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                {pricingConfig.globalEnabled ? 'Live: Pricing adjusts with demand' : 'Frozen: All prices locked to base price'}
+              </p>
             </div>
 
             <div>

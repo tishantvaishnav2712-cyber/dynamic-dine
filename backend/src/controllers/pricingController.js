@@ -64,6 +64,10 @@ const updatePricingConfig = async (req, res, next) => {
       console.log(`Rescheduled pricing ticks to run every ${config.cronIntervalMinutes} minutes`);
     }
 
+    if (req.io) {
+      req.io.emit('pricing_config_updated', config);
+    }
+
     res.json({ success: true, config });
   } catch (error) {
     next(error);
