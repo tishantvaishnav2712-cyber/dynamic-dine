@@ -10,7 +10,7 @@ const seedDatabase = async () => {
       await User.create({
         name: 'System Admin',
         email: 'admin@dynamicdine.com',
-        password: 'Admin@12345', // This will be automatically hashed by User model pre-save hook
+        password: 'Admin@12345', // Automatically hashed by User pre-save hook
         role: 'admin',
         phone: '1234567890',
       });
@@ -21,7 +21,7 @@ const seedDatabase = async () => {
     const tableCount = await Table.countDocuments();
     if (tableCount === 0) {
       const tables = [];
-      const capacities = [2, 2, 4, 4, 4, 4, 6, 6, 8, 10]; // Varying capacities for Table 1 to 10
+      const capacities = [2, 2, 4, 4, 4, 4, 6, 6, 8, 10];
       for (let i = 1; i <= 10; i++) {
         tables.push({
           tableNumber: i,
@@ -40,63 +40,63 @@ const seedDatabase = async () => {
     if (configCount === 0) {
       await PricingConfig.create({
         globalEnabled: true,
-        demandThresholdIncrease: 5,     // Threshold count for increase
-        demandThresholdDecrease: 2,     // Threshold count for decrease
-        priceIncreasePercent: 2.5,      // +2.5% (Halved from 5.0%)
-        priceDecreasePercent: 1.5,      // -1.5% (Halved from 3.0%)
+        demandThresholdIncrease: 5,
+        demandThresholdDecrease: 2,
+        priceIncreasePercent: 2.5,
+        priceDecreasePercent: 1.5,
         fixedIncreaseAmount: 0.00,
         fixedDecreaseAmount: 0.00,
-        demandWindowMinutes: 5,        // Small window (5 min) for active demo responsiveness
-        cronIntervalMinutes: 1,         // Run pricing calculations every 1 minute for demo
-        maxPriceChangePerUpdatePercent: 7.5,  // Halved from 15.0%
+        demandWindowMinutes: 5,
+        cronIntervalMinutes: 1,
+        maxPriceChangePerUpdatePercent: 7.5,
       });
       console.log('Seeded default dynamic pricing configuration');
     }
 
-    // 4. Seed Categories and Products (Full 13-category, 110-dish dynamic dine menu)
+    // 4. Seed Categories and Products (Preserves custom pictures permanently)
     const Category = require('../models/Category');
     const Product = require('../models/Product');
     const menuData = require('./menuData');
 
     const productCount = await Product.countDocuments();
-    if (productCount >= 50) {
-      console.log(`Database contains ${productCount} products. Skipping seeding to preserve your customized menu.`);
+    if (productCount > 0) {
+      console.log(`Database contains ${productCount} products. Skipping seeding to permanently preserve your customized images and dishes.`);
       return;
     }
 
-    console.log(`Database has only ${productCount} products. Seeding the complete 13-category, 110-dish menu...`);
-    await Category.deleteMany({});
-    await Product.deleteMany({});
+    console.log('Database empty. Seeding default menu with your customized dish pictures...');
 
     let totalDishes = 0;
     for (const catData of menuData) {
       const categoryDoc = await Category.create({
         name: catData.category,
-        description: catData.description,
+        description: catData.description || '',
       });
 
       for (const item of catData.items) {
-        const minPrice = Math.round(item.price * 0.75);
-        const maxPrice = Math.round(item.price * 1.45);
+        const bPrice = item.basePrice || item.price || 100;
+        const cPrice = item.currentPrice || bPrice;
+        const minPrice = item.minPrice || Math.round(bPrice * 0.75);
+        const maxPrice = item.maxPrice || Math.round(bPrice * 1.45);
 
         await Product.create({
           name: item.name,
           category: categoryDoc._id,
-          description: item.description,
-          image: item.image,
-          basePrice: item.price,
-          currentPrice: item.price,
+          description: item.description || '',
+          image: item.image || '',
+          basePrice: bPrice,
+          currentPrice: cPrice,
           minPrice: minPrice,
           maxPrice: maxPrice,
-          stock: 100,
-          isAvailable: true,
-          dynamicPricingEnabled: true,
+          stock: item.stock !== undefined ? item.stock : 100,
+          isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+          dynamicPricingEnabled: item.dynamicPricingEnabled !== undefined ? item.dynamicPricingEnabled : true,
           demandScore: 0,
         });
         totalDishes++;
       }
     }
-    console.log(`Successfully seeded all ${menuData.length} categories and ${totalDishes} dishes!`);
+    console.log(`Successfully seeded all ${menuData.length} categories and ${totalDishes} dishes with customized pictures!`);
   } catch (error) {
     console.error('Error seeding database:', error.message);
   }
