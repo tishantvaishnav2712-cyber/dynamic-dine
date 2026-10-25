@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,11 @@ const AdminDashboard = () => {
   // Charting & Logs
   const [priceHistory, setPriceHistory] = useState([]);
   const [selectedHistoryProductId, setSelectedHistoryProductId] = useState('');
+  const analyticsDebounceRef = useRef(null);
+  const selectedHistoryProductIdRef = useRef(selectedHistoryProductId);
+  useEffect(() => {
+    selectedHistoryProductIdRef.current = selectedHistoryProductId;
+  }, [selectedHistoryProductId]);
   
   // Selections & Modals
   const [qrModal, setQrModal] = useState({ show: false, tableNumber: null, qrUrl: '', qrImage: '' });
@@ -91,13 +96,12 @@ const AdminDashboard = () => {
 
     // Real-time price logs for scrolling header ticker
     socket.on('price_updated', ({ productId, currentPrice, previousPrice, percentageChanged }) => {
-      fetchAnalytics();
-      fetchProducts();
-      if (productId === selectedHistoryProductId) {
-        fetchPriceHistory(productId);
-      }
+      // 1. Instantly update in local state without firing heavy network requests
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, currentPrice } : p))
+      );
 
-      // Add to ticker alerts
+      // 2. Add to ticker alerts
       setProducts((prev) => {
         const prod = prev.find((p) => p._id === productId);
         if (prod) {
@@ -106,6 +110,27 @@ const AdminDashboard = () => {
         }
         return prev;
       });
+
+      // 3. Debounce analytics & history so it executes once after batch finishes, not 111 times
+      if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
+      analyticsDebounceRef.current = setTimeout(() => {
+        fetchAnalytics();
+        if (selectedHistoryProductIdRef.current) {
+          fetchPriceHistory(selectedHistoryProductIdRef.current);
+        }
+      }, 800);
+    });
+
+    socket.on('pricing_tick_completed', () => {
+      if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
+      analyticsDebounceRef.current = setTimeout(() => {
+        fetchAnalytics();
+      }, 500);
+    });
+
+    socket.on('prices_reset', () => {
+      fetchProducts();
+      fetchAnalytics();
     });
 
     socket.on('table_status_updated', () => fetchAnalytics());
@@ -116,13 +141,16 @@ const AdminDashboard = () => {
     });
 
     return () => {
+      if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
       socket.off('price_updated');
+      socket.off('pricing_tick_completed');
+      socket.off('prices_reset');
       socket.off('table_status_updated');
       socket.off('payment_completed');
       socket.off('order_placed');
       socket.off('pricing_config_updated');
     };
-  }, [socket, selectedHistoryProductId, token]);
+  }, [socket, token]);
 
   const fetchAnalytics = async () => {
     try {

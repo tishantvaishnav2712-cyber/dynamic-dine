@@ -154,6 +154,10 @@ const runPricingEvaluation = async (io) => {
       invalidateProductCache();
     } catch (e) {}
 
+    if (io) {
+      io.emit('pricing_tick_completed', { timestamp: new Date() });
+    }
+
     console.log('--- COMPLETED DYNAMIC PRICING EVALUATION TICK ---');
   } catch (error) {
     console.error('Error during relative pricing evaluation:', error.message);
