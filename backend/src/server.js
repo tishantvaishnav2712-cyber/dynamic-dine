@@ -27,8 +27,12 @@ const billingRoutes = require('./routes/billingRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 
+const { warmProductCache } = require('./controllers/productController');
+
 // Initialize database
-connectDB();
+connectDB().then(() => {
+  warmProductCache();
+});
 seedDatabase();
 
 

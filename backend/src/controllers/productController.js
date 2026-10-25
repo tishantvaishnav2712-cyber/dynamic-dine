@@ -4,11 +4,29 @@ const PricingHistory = require('../models/PricingHistory');
 // In-memory cache for ultra-fast catalog serving (<10ms)
 let cachedProductsResponse = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 60 * 1000; // 60s TTL
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes TTL (invalidated explicitly on edits/resets/pricing ticks)
 
 const invalidateProductCache = () => {
   cachedProductsResponse = null;
   lastCacheTime = 0;
+};
+
+const warmProductCache = async () => {
+  try {
+    const products = await Product.find({}).populate('category').sort({ name: 1 }).lean();
+    cachedProductsResponse = {
+      success: true,
+      count: products.length,
+      page: 1,
+      pages: 1,
+      total: products.length,
+      products,
+    };
+    lastCacheTime = Date.now();
+    console.log(`[Cache] Successfully pre-warmed product catalog cache with ${products.length} dishes in RAM.`);
+  } catch (err) {
+    console.error('[Cache] Failed to pre-warm product catalog:', err.message);
+  }
 };
 
 // @desc    Get all products
@@ -326,4 +344,5 @@ module.exports = {
   resetProductPrice,
   deleteProduct,
   invalidateProductCache,
+  warmProductCache,
 };
