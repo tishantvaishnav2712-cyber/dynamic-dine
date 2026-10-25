@@ -25,7 +25,7 @@ const getProducts = async (req, res, next) => {
 
     // Pagination
     const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 100; // default return all or large set since menus are moderately sized
+    const limitNum = parseInt(limit, 10) || 500; // default 500 so all dishes are returned
     const skip = (pageNum - 1) * limitNum;
 
     // Sorting

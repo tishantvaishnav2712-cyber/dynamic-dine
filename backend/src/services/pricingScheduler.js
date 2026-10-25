@@ -16,7 +16,7 @@ const runPricingEvaluation = async (io) => {
 
     console.log('--- STARTING DYNAMIC PRICING EVALUATION TICK (RELATIVE DEMAND ENGINE) ---');
 
-    const products = await Product.find({ dynamicPricingEnabled: true, isAvailable: true });
+    const products = await Product.find({ dynamicPricingEnabled: true, isAvailable: true }).select('-image');
     if (products.length === 0) {
       console.log('No active dynamic pricing products found.');
       return;
@@ -117,7 +117,7 @@ const runPricingEvaluation = async (io) => {
       // 4. Save and broadcast if price changed
       if (newPrice !== previousPrice) {
         product.currentPrice = newPrice;
-        await product.save();
+        await Product.updateOne({ _id: product._id }, { currentPrice: newPrice, demandScore: demandQty });
 
         percentageChanged = ((newPrice - previousPrice) / previousPrice) * 100;
 

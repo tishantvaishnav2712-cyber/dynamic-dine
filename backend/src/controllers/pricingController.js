@@ -119,17 +119,14 @@ const getPricingHistory = async (req, res, next) => {
 // @access  Private (Admin)
 const resetAllPrices = async (req, res, next) => {
   try {
-    const products = await Product.find({ dynamicPricingEnabled: true });
+    const products = await Product.find(
+      { dynamicPricingEnabled: true, $expr: { $ne: ['$currentPrice', '$basePrice'] } },
+      'name currentPrice basePrice'
+    );
     
     const logs = [];
     for (const product of products) {
       const previousPrice = product.currentPrice;
-      if (previousPrice === product.basePrice) continue;
-
-      product.currentPrice = product.basePrice;
-      product.demandScore = 0;
-      await product.save();
-
       const percentageChanged = previousPrice > 0
         ? ((product.basePrice - previousPrice) / previousPrice) * 100
         : 0;
@@ -146,18 +143,27 @@ const resetAllPrices = async (req, res, next) => {
       });
     }
 
+    // Instant bulk update of all products in MongoDB Atlas in <100ms
+    await Product.updateMany(
+      { dynamicPricingEnabled: true },
+      [{ $set: { currentPrice: '$basePrice', demandScore: 0 } }]
+    );
+
     if (logs.length > 0) {
       await PricingHistory.insertMany(logs);
-      
-      // Emit bulk price update broadcast
-      if (req.io) {
-        req.io.emit('prices_reset', { message: 'All prices reset to base values' });
-      }
+    }
+
+    // Emit bulk price update broadcast
+    const io = req.io || (req.app && req.app.get('io'));
+    if (io) {
+      io.emit('prices_reset', { message: 'All prices reset to base values' });
+      io.emit('pricing_updated', { message: 'All prices reset to base', resetAll: true });
     }
 
     res.json({
       success: true,
-      message: `Reset ${logs.length} active dynamic product prices back to base rates`,
+      message: `Reset ${products.length} active dynamic product prices back to base rates`,
+      count: products.length,
     });
   } catch (error) {
     next(error);

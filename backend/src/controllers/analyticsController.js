@@ -122,7 +122,7 @@ const getDashboardAnalytics = async (req, res, next) => {
     });
 
     // 8. Dynamic Pricing Impact (Compute revenue gain = sum(invoice.quantity * (priceAtOrder - basePrice)))
-    const productsList = await Product.find({});
+    const productsList = await Product.find({}, 'name basePrice');
     const basePriceMap = {};
     productsList.forEach(p => {
       basePriceMap[p.name] = p.basePrice;
@@ -149,7 +149,7 @@ const getDashboardAnalytics = async (req, res, next) => {
     const dynamicPricingImpact = parseFloat((actualPriceTotal - basePriceTotal).toFixed(2));
 
     // 9. Low Stock Warnings
-    const lowStockItems = await Product.find({ stock: { $lte: 5 } }).populate('category');
+    const lowStockItems = await Product.find({ stock: { $lte: 5 } }, 'name stock category').populate('category', 'name');
 
     res.json({
       success: true,

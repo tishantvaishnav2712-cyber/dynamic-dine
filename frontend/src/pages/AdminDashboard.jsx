@@ -226,13 +226,13 @@ const AdminDashboard = () => {
     try {
       const { data } = await axios.post(`${API_URL}/pricing/reset`);
       if (data.success) {
-        alert(data.message);
-        fetchProducts();
-        fetchAnalytics();
+        alert(data.message || 'All prices reset to base values successfully!');
+        await Promise.all([fetchProducts(), fetchAnalytics()]);
         if (selectedHistoryProductId) fetchPriceHistory(selectedHistoryProductId);
       }
     } catch (err) {
       console.error(err);
+      alert('Reset failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -441,6 +441,12 @@ const AdminDashboard = () => {
       </div>
 
       {/* Analytics Portal */}
+      {activeTab === 'analytics' && !stats && (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+          <div className="w-8 h-8 border-2 border-neoncyan border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm font-medium">Loading analytics intelligence...</p>
+        </div>
+      )}
       {activeTab === 'analytics' && stats && (
         <div className="space-y-6">
           {/* Metrics Grid */}
