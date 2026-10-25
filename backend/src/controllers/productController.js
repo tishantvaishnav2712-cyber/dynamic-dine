@@ -1,6 +1,19 @@
 const Product = require('../models/Product');
 const PricingHistory = require('../models/PricingHistory');
 
+// Pre-load images from local disk menuData.json (50ms) so Atlas never has to stream 8.3 MB of base64
+const imageMap = new Map();
+try {
+  const menuData = require('../config/menuData.json');
+  for (const cat of menuData) {
+    for (const item of cat.items) {
+      if (item.image) imageMap.set(item.name, item.image);
+    }
+  }
+} catch (err) {
+  console.error('[Images] Notice: Could not load local menuData.json:', err.message);
+}
+
 // In-memory cache for ultra-fast catalog serving (<10ms)
 let cachedProductsResponse = null;
 let lastCacheTime = 0;
@@ -13,7 +26,18 @@ const invalidateProductCache = () => {
 
 const warmProductCache = async () => {
   try {
-    const products = await Product.find({}).populate('category').sort({ name: 1 }).lean();
+    const products = await Product.find({})
+      .select('-image')
+      .populate('category')
+      .sort({ name: 1 })
+      .lean();
+
+    for (const p of products) {
+      if (!p.image) {
+        p.image = imageMap.get(p.name) || '';
+      }
+    }
+
     cachedProductsResponse = {
       success: true,
       count: products.length,
@@ -70,11 +94,18 @@ const getProducts = async (req, res, next) => {
     }
 
     const products = await Product.find(query)
+      .select('-image')
       .populate('category')
       .sort(sortOptions)
       .skip(skip)
       .limit(limitNum)
       .lean();
+
+    for (const p of products) {
+      if (!p.image) {
+        p.image = imageMap.get(p.name) || '';
+      }
+    }
 
     const total = await Product.countDocuments(query);
 
