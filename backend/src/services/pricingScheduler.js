@@ -145,9 +145,14 @@ const runPricingEvaluation = async (io) => {
         }
       } else {
         // Save the updated demandScore even if price is unchanged
-        await product.save();
+        await Product.updateOne({ _id: product._id }, { demandScore: demandQty });
       }
     }
+
+    try {
+      const { invalidateProductCache } = require('../controllers/productController');
+      invalidateProductCache();
+    } catch (e) {}
 
     console.log('--- COMPLETED DYNAMIC PRICING EVALUATION TICK ---');
   } catch (error) {

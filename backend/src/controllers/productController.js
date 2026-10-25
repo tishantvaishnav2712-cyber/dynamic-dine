@@ -1,12 +1,28 @@
 const Product = require('../models/Product');
 const PricingHistory = require('../models/PricingHistory');
 
+// In-memory cache for ultra-fast catalog serving (<10ms)
+let cachedProductsResponse = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60s TTL
+
+const invalidateProductCache = () => {
+  cachedProductsResponse = null;
+  lastCacheTime = 0;
+};
+
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res, next) => {
   try {
     const { search, category, minPrice, maxPrice, sort, page, limit } = req.query;
+
+    // Fast-path: serve cached catalog instantly for standard full-catalog requests
+    const isStandardCatalogRequest = !search && !category && !minPrice && !maxPrice && !sort && !page;
+    if (isStandardCatalogRequest && cachedProductsResponse && (Date.now() - lastCacheTime < CACHE_TTL_MS)) {
+      return res.json(cachedProductsResponse);
+    }
 
     const query = {};
 
@@ -39,18 +55,26 @@ const getProducts = async (req, res, next) => {
       .populate('category')
       .sort(sortOptions)
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
 
     const total = await Product.countDocuments(query);
 
-    res.json({
+    const responsePayload = {
       success: true,
       count: products.length,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
       total,
       products,
-    });
+    };
+
+    if (isStandardCatalogRequest) {
+      cachedProductsResponse = responsePayload;
+      lastCacheTime = Date.now();
+    }
+
+    res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -128,6 +152,7 @@ const createProduct = async (req, res, next) => {
       reason: 'manual_reset',
     });
 
+    invalidateProductCache();
     res.status(201).json({ success: true, product });
   } catch (error) {
     next(error);
@@ -218,6 +243,7 @@ const updateProduct = async (req, res, next) => {
       }
     }
 
+    invalidateProductCache();
     res.json({ success: true, product });
   } catch (error) {
     next(error);
@@ -265,6 +291,7 @@ const resetProductPrice = async (req, res, next) => {
       });
     }
 
+    invalidateProductCache();
     res.json({ success: true, product });
   } catch (error) {
     next(error);
@@ -283,6 +310,7 @@ const deleteProduct = async (req, res, next) => {
       throw new Error('Product not found');
     }
 
+    invalidateProductCache();
     await Product.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Product removed' });
   } catch (error) {
@@ -297,4 +325,5 @@ module.exports = {
   updateProduct,
   resetProductPrice,
   deleteProduct,
+  invalidateProductCache,
 };

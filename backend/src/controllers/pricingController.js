@@ -2,6 +2,7 @@ const PricingConfig = require('../models/PricingConfig');
 const PricingHistory = require('../models/PricingHistory');
 const Product = require('../models/Product');
 const scheduler = require('../services/pricingScheduler');
+const { invalidateProductCache } = require('./productController');
 
 // @desc    Get pricing configuration
 // @route   GET /api/pricing/config
@@ -152,6 +153,8 @@ const resetAllPrices = async (req, res, next) => {
     if (logs.length > 0) {
       await PricingHistory.insertMany(logs);
     }
+
+    invalidateProductCache();
 
     // Emit bulk price update broadcast
     const io = req.io || (req.app && req.app.get('io'));
