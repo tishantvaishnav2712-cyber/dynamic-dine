@@ -16,6 +16,7 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
+  Sparkles,
   X
 } from 'lucide-react';
 import { API_URL } from '../config';
@@ -36,7 +37,10 @@ const CustomerPortal = () => {
   const [session, setSession] = useState(null);
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
-  const [isCheckedOut, setIsCheckedOut] = useState(false);
+  const [isCheckedOut, setIsCheckedOut] = useState(() => {
+    return localStorage.getItem(`table_${tableNumber}_completed`) === 'true';
+  });
+  const [tableStatus, setTableStatus] = useState('');
 
   // Menu states
   const [products, setProducts] = useState([]);
@@ -78,7 +82,31 @@ const CustomerPortal = () => {
     }
   }, [tableNumber, searchParams]);
 
-  // WebSocket listeners for live updates
+  // Table-level WebSocket listener (Active even before session or during cleaning)
+  useEffect(() => {
+    if (!socket || !verified) return;
+
+    socket.emit('join_table', tableNumber);
+
+    const onTableStatus = ({ tableNumber: tNum, status }) => {
+      if (parseInt(tNum) === parseInt(tableNumber)) {
+        setTableStatus(status);
+        if (status === 'available') {
+          // Table was officially released by staff as ready for new guests
+          localStorage.removeItem(`table_${tableNumber}_completed`);
+          setIsCheckedOut(false);
+        }
+      }
+    };
+
+    socket.on('table_status_updated', onTableStatus);
+
+    return () => {
+      socket.off('table_status_updated', onTableStatus);
+    };
+  }, [socket, verified, tableNumber]);
+
+  // WebSocket listeners for live updates during active session
   useEffect(() => {
     if (!socket || !verified || !session) return;
 
@@ -130,8 +158,9 @@ const CustomerPortal = () => {
     // Settle bill / payment checkout listener
     socket.on('payment_completed', ({ tableNumber: tNum }) => {
       if (parseInt(tNum) === parseInt(tableNumber)) {
+        localStorage.setItem(`table_${tableNumber}_completed`, 'true');
         localStorage.removeItem(`table_${tableNumber}_session`);
-        localStorage.removeItem(`table_${tableNumber}_key`);
+        setTableStatus('cleaning');
         setIsCheckedOut(true);
       }
     });
@@ -143,7 +172,7 @@ const CustomerPortal = () => {
       socket.off('notification');
       socket.off('payment_completed');
     };
-  }, [socket, verified, session]);
+  }, [socket, verified, session, tableNumber]);
 
   const showToast = (message, type = 'info') => {
     setToast({ show: true, message, type });
@@ -155,7 +184,20 @@ const CustomerPortal = () => {
       const { data } = await axios.post(`${API_URL}/tables/${tableNumber}/verify`, { key });
       if (data.success) {
         setVerified(true);
+        setTableStatus(data.table.status);
+
+        // If this guest previously completed their session on this table, keep them on the conclusion screen
+        if (localStorage.getItem(`table_${tableNumber}_completed`) === 'true' && data.table.status !== 'available') {
+          setIsCheckedOut(true);
+          return;
+        }
+
         if (data.table.activeSession) {
+          if (data.table.activeSession.paymentStatus === 'paid') {
+            localStorage.setItem(`table_${tableNumber}_completed`, 'true');
+            setIsCheckedOut(true);
+            return;
+          }
           setSession(data.table.activeSession);
           setHasSession(true);
           localStorage.setItem(`table_${tableNumber}_session`, data.table.activeSession.sessionToken);
@@ -173,6 +215,15 @@ const CustomerPortal = () => {
 
   const startDining = async (e) => {
     e.preventDefault();
+    if (tableStatus && tableStatus !== 'available') {
+      showToast(
+        tableStatus === 'cleaning'
+          ? `Table ${tableNumber} is currently being cleaned. Please wait for staff.`
+          : `Table ${tableNumber} is currently ${tableStatus}.`,
+        'error'
+      );
+      return;
+    }
     const cleanPhone = custPhone.replace(/\D/g, '');
     if (cleanPhone.length !== 10) {
       showToast('Mobile number must be exactly 10 digits', 'error');
@@ -187,6 +238,9 @@ const CustomerPortal = () => {
       });
 
       if (data.success) {
+        // Clear any old completed state
+        localStorage.removeItem(`table_${tableNumber}_completed`);
+        setIsCheckedOut(false);
         setSession(data.session);
         setHasSession(true);
         localStorage.setItem(`table_${tableNumber}_session`, data.session.sessionToken);
@@ -214,8 +268,8 @@ const CustomerPortal = () => {
         fetchCategories();
         fetchMenu();
       } else if (data.success && data.session && data.session.paymentStatus === 'paid') {
+        localStorage.setItem(`table_${tableNumber}_completed`, 'true');
         localStorage.removeItem(`table_${tableNumber}_session`);
-        localStorage.removeItem(`table_${tableNumber}_key`);
         setIsCheckedOut(true);
       }
     } catch (err) {
@@ -374,44 +428,7 @@ const CustomerPortal = () => {
   const invoiceGst = parseFloat((invoiceSubtotal * 0.05).toFixed(2));
   const invoiceTotal = parseFloat((invoiceSubtotal + invoiceGst).toFixed(2));
 
-  const handleCheckoutDone = () => {
-    setIsCheckedOut(false);
-    setHasSession(false);
-    setSession(null);
-    setPlacedOrders([]);
-    setCart({});
-    setActiveTab('menu');
-  };
-
-  // Render layouts
-  if (isCheckedOut) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-obsidian-900 text-white px-4">
-        <div className="max-w-md w-full glass-panel p-8 rounded-2xl border border-neoncyan/20 text-center space-y-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-neoncyan/5 to-transparent pointer-events-none"></div>
-          <div className="inline-flex p-4 bg-neoncyan/10 rounded-2xl text-neoncyan animate-bounce mb-2">
-            <CheckCircle className="w-12 h-12" />
-          </div>
-          <h2 className="text-3xl font-black tracking-tight text-white animate-pulse">Thank You!</h2>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Your table billing check has been settled successfully. We hope you had an amazing dynamic dining experience!
-          </p>
-          <div className="bg-obsidian-800/50 p-4 rounded-xl border border-slate-700/50">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Receipt reference</p>
-            <p className="text-[10px] text-slate-400 font-mono select-all">Table {tableNumber} Session Closed</p>
-          </div>
-          <button
-            onClick={handleCheckoutDone}
-            className="w-full bg-neoncyan text-obsidian-900 font-black py-3 rounded-xl hover:bg-neoncyan/95 transition-all text-xs cursor-pointer shadow-lg shadow-neoncyan/15 uppercase tracking-wider"
-          >
-            Start New Dining Session
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Render layouts
+  // Render layouts: Verification Gate
   if (verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-obsidian-900 text-white">
@@ -433,6 +450,53 @@ const CustomerPortal = () => {
           <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
           <p className="text-sm text-slate-400 leading-relaxed mb-6">{verificationError}</p>
           <div className="text-[10px] text-slate-500 uppercase tracking-widest">Dynamic Dine Secure Terminal</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render layouts: Completed Session Block
+  if (isCheckedOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-900 text-white px-4">
+        <div className="max-w-md w-full glass-panel p-8 rounded-2xl border border-emerald-500/30 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent pointer-events-none"></div>
+          <div className="inline-flex p-4 bg-emerald-500/15 rounded-2xl text-emerald-400 mb-2">
+            <CheckCircle className="w-12 h-12" />
+          </div>
+          <h2 className="text-3xl font-black tracking-tight text-white">Session Concluded</h2>
+          <p className="text-sm text-slate-300 leading-relaxed">
+            Your dining session has concluded and your bill has been settled successfully. Thank you for dining with Dynamic Dine!
+          </p>
+          <div className="bg-obsidian-800/60 p-4 rounded-xl border border-slate-700/50 space-y-1">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Session Status</p>
+            <p className="text-xs text-emerald-400 font-bold font-mono">Table {tableNumber} • Bill Paid & Closed</p>
+          </div>
+          <div className="bg-obsidian-800/30 p-3.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+            This table session has ended. To seat new guests or start a new order, please speak with the restaurant staff.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render layouts: Table Cleaning in Progress
+  if (tableStatus === 'cleaning') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-900 text-white px-4">
+        <div className="max-w-md w-full glass-panel p-8 rounded-2xl border border-amber-500/30 text-center space-y-5 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent pointer-events-none"></div>
+          <div className="inline-flex p-4 bg-amber-500/15 rounded-2xl text-amber-400 mb-2">
+            <Sparkles className="w-12 h-12 animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-black text-white">Table Being Prepared</h2>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Table {tableNumber} is currently being cleaned and sanitized for the next dining party.
+            Please wait for our restaurant staff to seat you.
+          </p>
+          <div className="bg-obsidian-800/60 p-3 rounded-xl border border-slate-700/50 text-[11px] text-slate-400">
+            Status: <span className="text-amber-400 font-bold uppercase">Cleaning in Progress</span>
+          </div>
         </div>
       </div>
     );

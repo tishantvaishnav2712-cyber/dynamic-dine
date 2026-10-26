@@ -50,11 +50,24 @@ const startSession = async (req, res, next) => {
       });
     }
 
-    // Check if table is already occupied
-    if (table.status === 'occupied' && table.currentSessionId) {
-      // Re-use session if it belongs to them or just return active session info
+    // BLOCK: Public QR customer cannot start a session if table is NOT available
+    if (!isStaffAuthenticated && table.status !== 'available') {
+      let reasonMessage = `Table ${tableNumber} is not ready for a new dining session.`;
+      if (table.status === 'cleaning') {
+        reasonMessage = `Table ${tableNumber} is currently being cleaned and prepared. Please wait for restaurant staff to seat you.`;
+      } else if (table.status === 'occupied') {
+        reasonMessage = `Table ${tableNumber} currently has an ongoing dining session.`;
+      }
+      return res.status(400).json({
+        success: false,
+        message: reasonMessage,
+      });
+    }
+
+    // Check if table is already occupied with an active session
+    if (table.currentSessionId) {
       const activeSession = await DiningSession.findById(table.currentSessionId);
-      if (activeSession) {
+      if (activeSession && activeSession.paymentStatus === 'pending') {
         return res.json({
           success: true,
           message: 'Active session already exists for this table',
